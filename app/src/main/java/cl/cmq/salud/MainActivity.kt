@@ -1,14 +1,14 @@
 package cl.cmq.salud
 
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import cl.cmq.salud.ui.screens.login.home.HomeScreen
 import cl.cmq.salud.ui.screens.login.LoginScreen
 import cl.cmq.salud.ui.theme.CMQSaludTheme
 
@@ -18,13 +18,22 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             CMQSaludTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
+                var isLoggedIn by remember { mutableStateOf(false) }
+
+                if (!isLoggedIn) {
                     LoginScreen(
                         onLoginSuccess = {
-                            Toast.makeText(this, "Login exitoso", Toast.LENGTH_SHORT).show()
+                            isLoggedIn = true
+                        }
+                    )
+                } else {
+                    HomeScreen(
+                        onNavigateConsulta = { },
+                        onNavigateCarga = { },
+                        onNavigateValidacion = { },
+                        onNavigateBitacora = { },
+                        onCerrarSesion = {
+                            isLoggedIn = false
                         }
                     )
                 }

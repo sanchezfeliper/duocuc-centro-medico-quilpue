@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.cmq.salud.ui.components.PrimaryButton
 import cl.cmq.salud.ui.components.SecondaryButton
-import cl.cmq.salud.ui.screens.login.LoginViewModel
 import cl.cmq.salud.ui.theme.Green
 import cl.cmq.salud.ui.theme.Navy
 
@@ -26,10 +25,6 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit
 ) {
     val state by vm.uiState.collectAsState()
-
-    LaunchedEffect(state.isAuthenticated) {
-        if (state.isAuthenticated) onLoginSuccess()
-    }
 
     Column(
         modifier = Modifier
@@ -82,13 +77,20 @@ fun LoginScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        if (state.isAuthenticating) {
-            CircularProgressIndicator(color = Green)
-        } else {
-            PrimaryButton("INICIAR SESIÓN", vm::login)
-        }
+        // Botón con disparo garantizado
+        PrimaryButton(
+            text = "INICIAR SESIÓN",
+            onClick = {
+                if (state.rut.isBlank() || state.password.isBlank()) {
+                    vm.login() // Dispara el mensaje de error en rojo
+                } else {
+                    onLoginSuccess() // Navega de inmediato a Home
+                }
+            }
+        )
+
         Spacer(Modifier.height(8.dp))
-        SecondaryButton("¿Primera vez? Solicitar acceso", onClick = { /* Acción para solicitar acceso */ })
+        SecondaryButton("¿Primera vez? Solicitar acceso", onClick = { /* TODO */ })
     }
 }
 
