@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 package cl.cmq.salud.ui.screens.home
+=======
+package cl.cmq.salud.ui.screens.login.home
+>>>>>>> b5d54a074f57dca4c623e45002ea0bcc37fd2f8a
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
