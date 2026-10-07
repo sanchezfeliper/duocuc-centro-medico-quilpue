@@ -3,12 +3,6 @@ package cl.cmq.salud.ui.screens.consulta
 
 import cl.cmq.salud.domain.model.Documento
 
-data class ConsultaUiState(
-    val rut: String = "",
-// ui/screens/consulta/ConsultaUiState.kt
-    package cl.cmq.salud.ui.screens.consulta
-
-import cl.cmq.salud.domain.model.Documento
 
 data class ConsultaUiState(
     val rut: String = "",
