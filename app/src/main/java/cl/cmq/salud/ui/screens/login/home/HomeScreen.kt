@@ -20,6 +20,7 @@ import cl.cmq.salud.ui.components.MenuCard
 import cl.cmq.salud.ui.components.NavItem
 import cl.cmq.salud.ui.theme.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     vm: HomeViewModel = viewModel(),
