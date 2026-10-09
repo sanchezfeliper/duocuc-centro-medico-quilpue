@@ -1,6 +1,6 @@
 package cl.cmq.salud.ui.screens.home
 
-data class HomeUiState(
+data class SHomeUiState(
     val rut: String = "",
     val nombreUsuario: String = "Maria Gonzalez",
     val perfil: String = "Personal Administrativo",

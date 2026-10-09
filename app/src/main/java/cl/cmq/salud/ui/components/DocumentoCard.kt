@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream
-=======
 package cl.cmq.salud.ui.components
 
 import androidx.compose.foundation.background
@@ -69,4 +67,3 @@ private fun badgeColors(estado: EstadoDocumento): Pair<Color, Color> = when (est
     EstadoDocumento.RECHAZADO -> Color(0xFFF8D7DA) to Color(0xFF721C24)
     EstadoDocumento.VENCIDO  -> Color(0xFFE2E3E5) to Color(0xFF383D41)
 }
->>>>>>> Stashed changes
