@@ -84,6 +84,19 @@ class CargaViewModel(
         _uiState.update { it.copy(showSuccessDialog = false) }
     }
 
+    /**
+     * Meta 4: cierre del ciclo al elegir "Cargar otro". Reinicia el formulario
+     * y confirma el registro con un evento de éxito (Snackbar), de modo que el
+     * usuario siempre recibe respuesta visible tras procesar.
+     */
+    fun cargarOtro() {
+        val folio = _uiState.value.documentoCreado?.idDocumento
+        _uiState.value = CargaUiState()
+        _uiState.update {
+            it.copy(successEventId = it.successEventId + 1, ultimoFolioRegistrado = folio)
+        }
+    }
+
     // ------------------------------------------------------------------
     // Validación y procesamiento (Ciclo: Validar -> Procesar -> Entregar respuesta)
     // ------------------------------------------------------------------
@@ -108,6 +121,15 @@ class CargaViewModel(
 
         val errores = listOfNotNull(rutErr, tipoErr, nombreErr, descErr, autErr)
         if (errores.isNotEmpty()) {
+            // Meta 4: respuesta visible garantizada en tres niveles: Snackbar
+            // (evento único), banner con el resumen y errores por campo.
+            val campos = buildList {
+                if (rutErr != null) add("RUT Funcionario")
+                if (tipoErr != null) add("Tipo de documento")
+                if (nombreErr != null) add("Nombre del archivo")
+                if (descErr != null) add("Descripción / Observaciones")
+                if (autErr != null) add("Declaración de autenticidad")
+            }
             _uiState.update {
                 it.copy(
                     rutError = rutErr,
@@ -115,8 +137,10 @@ class CargaViewModel(
                     nombreArchivoError = nombreErr,
                     descripcionError = descErr,
                     autenticidadError = autErr,
+                    camposConError = campos,
                     generalError = "No se pudo registrar el documento: ${errores.size} campo(s) requieren corrección. " +
-                        "Cada mensaje en rojo indica qué está mal y cómo corregirlo."
+                        "Cada mensaje en rojo indica qué está mal y cómo corregirlo.",
+                    errorEventId = it.errorEventId + 1
                 )
             }
             return
@@ -150,7 +174,15 @@ class CargaViewModel(
                 it.copy(
                     isSubmitting = false,
                     documentoCreado = guardado,
-                    showSuccessDialog = true
+                    showSuccessDialog = true,
+                    // Meta 4: al registrar, se limpian los errores previos
+                    rutError = null,
+                    tipoError = null,
+                    nombreArchivoError = null,
+                    descripcionError = null,
+                    autenticidadError = null,
+                    generalError = null,
+                    camposConError = emptyList()
                 )
             }
         }

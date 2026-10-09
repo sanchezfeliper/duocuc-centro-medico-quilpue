@@ -22,6 +22,9 @@ import cl.cmq.salud.ui.components.PrimaryButton
 import cl.cmq.salud.ui.components.SecondaryButton
 import cl.cmq.salud.ui.theme.*
 
+/** Fondo suave del banner de resumen de errores (Meta 4). */
+private val BannerErrorBg = Color(0xFFFDECEA)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CargaDocumentoScreen(
@@ -30,8 +33,34 @@ fun CargaDocumentoScreen(
     vm: CargaViewModel = viewModel()
 ) {
     val state by vm.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Meta 4: respuesta visible ante error. Cada intento de guardado fallido
+    // dispara un Snackbar (contador de eventos, no el mensaje en sí, para que
+    // se muestre incluso si los errores se repiten).
+    LaunchedEffect(state.errorEventId) {
+        if (state.errorEventId > 0) {
+            snackbarHostState.showSnackbar(
+                message = "No se pudo registrar el documento: revise los campos marcados en rojo",
+                actionLabel = "Entendido",
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
+
+    // Meta 4: mensaje de éxito visible al elegir "Cargar otro" (el folio
+    // completo ya se mostró en el AlertDialog).
+    LaunchedEffect(state.successEventId) {
+        if (state.successEventId > 0) {
+            snackbarHostState.showSnackbar(
+                message = "Documento #${state.ultimoFolioRegistrado ?: "-"} registrado correctamente",
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Cargar documento", color = Color.White, fontSize = 15.sp) },
@@ -264,15 +293,36 @@ fun CargaDocumentoScreen(
                 )
             }
 
-            // Mensaje de error general si falló validación
+            // Meta 4: banner condicional con el resumen de lo que hay que corregir
+            // (texto condicional + lista de campos afectados)
             if (state.generalError != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = state.generalError ?: "",
-                    color = Red,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = BannerErrorBg),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = state.generalError ?: "",
+                            color = Red,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        if (state.camposConError.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text("Campos a revisar:", color = Red, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                            state.camposConError.forEach { campo ->
+                                Text(
+                                    text = "• $campo",
+                                    color = Red,
+                                    fontSize = 10.sp,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -332,10 +382,7 @@ fun CargaDocumentoScreen(
             },
             dismissButton = {
                 TextButton(
-                    onClick = {
-                        vm.dismissSuccessDialog()
-                        vm.limpiarFormulario()
-                    }
+                    onClick = { vm.cargarOtro() }
                 ) {
                     Text("Cargar otro", color = Grey)
                 }
