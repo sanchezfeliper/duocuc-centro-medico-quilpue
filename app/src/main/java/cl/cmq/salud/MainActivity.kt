@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import cl.cmq.salud.ui.screens.carga.CargaDocumentoScreen
 import cl.cmq.salud.ui.screens.consulta.ConsultaExpedienteScreen
 import cl.cmq.salud.ui.screens.home.HomeScreen
 import cl.cmq.salud.ui.screens.login.LoginScreen
@@ -17,7 +18,8 @@ import cl.cmq.salud.ui.theme.CMQSaludTheme
 enum class AppPantalla {
     LOGIN,
     HOME,
-    CONSULTA
+    CONSULTA,
+    CARGA
 }
 
 class MainActivity : ComponentActivity() {
@@ -42,7 +44,7 @@ class MainActivity : ComponentActivity() {
                                 pantallaActual = AppPantalla.CONSULTA
                             },
                             onNavigateCarga = {
-                                Toast.makeText(this, "Próximamente: Cargar documento", Toast.LENGTH_SHORT).show()
+                                pantallaActual = AppPantalla.CARGA
                             },
                             onNavigateValidacion = {
                                 Toast.makeText(this, "Próximamente: Validaciones pendientes", Toast.LENGTH_SHORT).show()
@@ -62,6 +64,17 @@ class MainActivity : ComponentActivity() {
                             },
                             onDocumentoClick = { idDocumento ->
                                 Toast.makeText(this, "Documento seleccionado: #$idDocumento", Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    }
+                    AppPantalla.CARGA -> {
+                        CargaDocumentoScreen(
+                            onVolver = {
+                                pantallaActual = AppPantalla.HOME
+                            },
+                            onCargaExitosa = { idDocumento ->
+                                pantallaActual = AppPantalla.HOME
+                                Toast.makeText(this, "Documento #$idDocumento registrado exitosamente", Toast.LENGTH_SHORT).show()
                             }
                         )
                     }
