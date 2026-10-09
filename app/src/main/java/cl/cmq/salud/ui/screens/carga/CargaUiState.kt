@@ -10,7 +10,7 @@ enum class OrigenDocumento(val label: String) {
 
 data class CargaUiState(
     // Campos de entrada
-    val rut: String = "18.765.432-1",
+    val rut: String = "",
     val tipoSeleccionado: String = "Contrato de trabajo",
     val nombreArchivo: String = "",
     val descripcion: String = "",
@@ -32,6 +32,7 @@ data class CargaUiState(
 
     // Errores de validación por campo
     val rutError: String? = null,
+    val tipoError: String? = null,
     val nombreArchivoError: String? = null,
     val descripcionError: String? = null,
     val autenticidadError: String? = null,

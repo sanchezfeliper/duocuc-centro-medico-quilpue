@@ -19,13 +19,35 @@ class CargaViewModel(
     private val _uiState = MutableStateFlow(CargaUiState())
     val uiState: StateFlow<CargaUiState> = _uiState.asStateFlow()
 
-    // Manejo de eventos de entrada y modificación (Ciclo: Ingresar -> Modificar)
+    companion object {
+        // Formato chileno con puntos, guión y dígito verificador
+        private val REGEX_RUT = Regex("^\\d{1,2}\\.\\d{3}\\.\\d{3}-[\\dkK]$")
+
+        // Extensiones aceptadas por RF-08
+        private val EXTENSIONES_VALIDAS = listOf(".pdf", ".jpg", ".jpeg", ".png")
+
+        // Caracteres no permitidos en nombres de archivo (SharePoint/Windows)
+        private val CARACTERES_PROHIBIDOS = listOf('\\', '/', ':', '*', '?', '"', '<', '>', '|')
+
+        // Límites coherentes con el modelo de datos E4 Documento
+        private const val LARGO_MAX_NOMBRE_ARCHIVO = 150
+        private const val LARGO_MIN_DESCRIPCION = 5
+        private const val LARGO_MAX_DESCRIPCION = 200
+    }
+
+    // ------------------------------------------------------------------
+    // Eventos de entrada (Ciclo: Ingresar -> Modificar)
+    // Cada cambio re-valida el campo en vivo: el usuario ve el error
+    // mientras escribe y el mensaje le indica cómo corregirlo.
+    // ------------------------------------------------------------------
+
     fun onRutChange(value: String) {
-        _uiState.update { it.copy(rut = value, rutError = null, generalError = null) }
+        val error = if (value.isBlank()) null else validarRut(value)
+        _uiState.update { it.copy(rut = value, rutError = error, generalError = null) }
     }
 
     fun onTipoChange(value: String) {
-        _uiState.update { it.copy(tipoSeleccionado = value, isDropdownExpanded = false) }
+        _uiState.update { it.copy(tipoSeleccionado = value, isDropdownExpanded = false, tipoError = null) }
     }
 
     fun onDropdownExpandChange(expanded: Boolean) {
@@ -33,11 +55,13 @@ class CargaViewModel(
     }
 
     fun onNombreArchivoChange(value: String) {
-        _uiState.update { it.copy(nombreArchivo = value, nombreArchivoError = null, generalError = null) }
+        val error = if (value.isBlank()) null else validarNombreArchivo(value)
+        _uiState.update { it.copy(nombreArchivo = value, nombreArchivoError = error, generalError = null) }
     }
 
     fun onDescripcionChange(value: String) {
-        _uiState.update { it.copy(descripcion = value, descripcionError = null, generalError = null) }
+        val error = if (value.isBlank()) null else validarDescripcion(value)
+        _uiState.update { it.copy(descripcion = value, descripcionError = error, generalError = null) }
     }
 
     fun onOrigenChange(value: OrigenDocumento) {
@@ -60,70 +84,45 @@ class CargaViewModel(
         _uiState.update { it.copy(showSuccessDialog = false) }
     }
 
+    // ------------------------------------------------------------------
+    // Validación y procesamiento (Ciclo: Validar -> Procesar -> Entregar respuesta)
+    // ------------------------------------------------------------------
+
     /**
-     * Valida y procesa el formulario (Ciclo: Validar -> Procesar -> Entregar respuesta).
+     * Valida todos los campos del formulario. Si algún campo falla, marca
+     * los errores por campo y un mensaje general con la cantidad de campos
+     * a corregir; no se envía nada al repositorio.
      */
     fun guardarDocumento() {
         val state = _uiState.value
 
-        var hayError = false
-        var rutErr: String? = null
-        var nombreErr: String? = null
-        var descErr: String? = null
-        var autErr: String? = null
-
-        // 1. Validar RUT (formato chileno con dígito verificador sintáctico)
-        val regexRut = Regex("^\\d{1,2}\\.\\d{3}\\.\\d{3}-[\\dkK]$")
-        if (state.rut.isBlank()) {
-            rutErr = "El RUT es obligatorio"
-            hayError = true
-        } else if (!regexRut.matches(state.rut.trim())) {
-            rutErr = "Formato de RUT inválido (ej: 18.765.432-1)"
-            hayError = true
-        }
-
-        // 2. Validar Nombre de archivo
-        if (state.nombreArchivo.isBlank()) {
-            nombreErr = "Debe indicar el nombre del archivo"
-            hayError = true
+        val rutErr = validarRut(state.rut)
+        val tipoErr = validarTipo(state.tipoSeleccionado)
+        val nombreErr = validarNombreArchivo(state.nombreArchivo)
+        val descErr = validarDescripcion(state.descripcion)
+        val autErr = if (!state.declaraAutenticidad) {
+            "Debe marcar la declaración de autenticidad: confirme que el documento y sus metadatos son fidedignos (RN-08)."
         } else {
-            val extensionesValidas = listOf(".pdf", ".jpg", ".jpeg", ".png")
-            val tieneExtension = extensionesValidas.any { state.nombreArchivo.lowercase().endsWith(it) }
-            if (!tieneExtension) {
-                nombreErr = "Debe incluir extensión válida (.pdf, .jpg, .png)"
-                hayError = true
-            }
+            null
         }
 
-        // 3. Validar Descripción / Observaciones
-        if (state.descripcion.isBlank()) {
-            descErr = "La descripción es obligatoria"
-            hayError = true
-        } else if (state.descripcion.trim().length < 5) {
-            descErr = "Mínimo 5 caracteres para la descripción"
-            hayError = true
-        }
-
-        // 4. Validar Declaración de autenticidad
-        if (!state.declaraAutenticidad) {
-            autErr = "Debe declarar la autenticidad para registrar el archivo"
-            hayError = true
-        }
-
-        if (hayError) {
+        val errores = listOfNotNull(rutErr, tipoErr, nombreErr, descErr, autErr)
+        if (errores.isNotEmpty()) {
             _uiState.update {
                 it.copy(
                     rutError = rutErr,
+                    tipoError = tipoErr,
                     nombreArchivoError = nombreErr,
                     descripcionError = descErr,
                     autenticidadError = autErr,
-                    generalError = "Por favor corrija los campos marcados antes de continuar"
+                    generalError = "No se pudo registrar el documento: ${errores.size} campo(s) requieren corrección. " +
+                        "Cada mensaje en rojo indica qué está mal y cómo corregirlo."
                 )
             }
             return
         }
 
-        // 5. Procesamiento asíncrono
+        // Procesamiento asíncrono
         _uiState.update { it.copy(isSubmitting = true, generalError = null) }
 
         viewModelScope.launch {
@@ -154,6 +153,93 @@ class CargaViewModel(
                     showSuccessDialog = true
                 )
             }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Reglas de validación (Meta 3)
+    // Cada función devuelve null si el valor es válido, o un mensaje que
+    // explica QUÉ está mal y CÓMO corregirlo.
+    // ------------------------------------------------------------------
+
+    /** Campo obligatorio + formato + regla propia: dígito verificador (Módulo 11). */
+    private fun validarRut(valor: String): String? {
+        val rut = valor.trim()
+        if (rut.isEmpty()) {
+            return "El RUT es obligatorio: ingrese el identificador del funcionario con puntos y guión, ej: 18.765.432-7."
+        }
+        if (!REGEX_RUT.matches(rut)) {
+            return "Formato de RUT inválido: escríbalo como 18.765.432-7 (puntos miles, guión y dígito verificador, sin espacios)."
+        }
+        val cuerpo = rut.dropLast(2).filter { it.isDigit() }
+        val dvIngresado = rut.last().uppercaseChar()
+        val dvEsperado = calcularDigitoVerificador(cuerpo)
+        if (dvIngresado != dvEsperado) {
+            return "El dígito verificador no coincide: para este RUT el carácter tras el guión debiera ser '$dvEsperado' y se ingresó '$dvIngresado'. Verifique el RUT del funcionario."
+        }
+        return null
+    }
+
+    /** Validación de selección: el tipo debe pertenecer al catálogo institucional (RN-08). */
+    private fun validarTipo(valor: String): String? {
+        if (valor !in _uiState.value.tiposDisponibles) {
+            return "Seleccione un tipo de documento del catálogo institucional: Contrato, Certificado de capacitación, Licencia médica, Permiso administrativo o Anexo."
+        }
+        return null
+    }
+
+    /** Campo obligatorio + formato (extensión y caracteres) + longitud máxima E4. */
+    private fun validarNombreArchivo(valor: String): String? {
+        val nombre = valor.trim()
+        if (nombre.isEmpty()) {
+            return "El nombre del archivo es obligatorio: escriba un nombre descriptivo con su extensión, ej: contrato_juan_perez.pdf."
+        }
+        val prohibido = nombre.firstOrNull { it in CARACTERES_PROHIBIDOS }
+        if (prohibido != null) {
+            return "El nombre contiene el carácter '$prohibido', no permitido en nombres de archivo. Reemplácelo por guion bajo (_) o guion medio (-)."
+        }
+        if (nombre.length > LARGO_MAX_NOMBRE_ARCHIVO) {
+            return "El nombre supera el máximo de $LARGO_MAX_NOMBRE_ARCHIVO caracteres (lleva ${nombre.length}). Acórtelo manteniendo la extensión (.pdf, .jpg o .png)."
+        }
+        val extensionValida = EXTENSIONES_VALIDAS.any { nombre.lowercase().endsWith(it) }
+        if (!extensionValida) {
+            return "Extensión no permitida: solo se aceptan archivos .pdf, .jpg, .jpeg o .png. Renombre el archivo con una de esas extensiones antes de subirlo."
+        }
+        return null
+    }
+
+    /** Campo obligatorio + longitud mínima y máxima (E4 Documento.descripcion). */
+    private fun validarDescripcion(valor: String): String? {
+        val descripcion = valor.trim()
+        if (descripcion.isEmpty()) {
+            return "La descripción es obligatoria: indique el motivo o contexto del documento, ej: Permiso médico del 28-09-2026."
+        }
+        if (descripcion.length < LARGO_MIN_DESCRIPCION) {
+            return "La descripción es demasiado corta: escriba al menos $LARGO_MIN_DESCRIPCION caracteres (lleva ${descripcion.length}). Agregue el contexto del documento."
+        }
+        if (descripcion.length > LARGO_MAX_DESCRIPCION) {
+            return "La descripción supera el máximo de $LARGO_MAX_DESCRIPCION caracteres (lleva ${descripcion.length}). Resuma la información esencial."
+        }
+        return null
+    }
+
+    /**
+     * Regla propia del proyecto (Meta 3): cálculo del dígito verificador
+     * del RUT chileno mediante Módulo 11. Devuelve un dígito '0' a '9'
+     * o la letra 'K' cuando el resultado es 10.
+     */
+    private fun calcularDigitoVerificador(cuerpo: String): Char {
+        var suma = 0
+        var multiplicador = 2
+        for (digito in cuerpo.reversed()) {
+            suma += digito.digitToInt() * multiplicador
+            multiplicador = if (multiplicador == 7) 2 else multiplicador + 1
+        }
+        val resto = suma % 11
+        return when (val dv = 11 - resto) {
+            11 -> '0'
+            10 -> 'K'
+            else -> ('0' + dv)
         }
     }
 }
