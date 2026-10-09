@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream:app/src/main/java/cl/cmq/salud/ui/screens/login/home/HomeViewModel.kt
 package cl.cmq.salud.ui.screens.login.home
+=======
+package cl.cmq.salud.ui.screens.home
+>>>>>>> Stashed changes:app/src/main/java/cl/cmq/salud/ui/screens/home/HomeViewModel.kt
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

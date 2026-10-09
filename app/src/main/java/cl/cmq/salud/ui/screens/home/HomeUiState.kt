@@ -1,4 +1,4 @@
-package cl.cmq.salud.ui.screens.login.home
+package cl.cmq.salud.ui.screens.home
 
 data class HomeUiState(
     val rut: String = "",

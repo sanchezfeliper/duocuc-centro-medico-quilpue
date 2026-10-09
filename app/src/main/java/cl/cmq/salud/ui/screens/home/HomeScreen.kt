@@ -1,5 +1,9 @@
+<<<<<<< Updated upstream:app/src/main/java/cl/cmq/salud/ui/screens/login/home/HomeScreen.kt
 
 package cl.cmq.salud.ui.screens.login.home
+=======
+package cl.cmq.salud.ui.screens.home
+>>>>>>> Stashed changes:app/src/main/java/cl/cmq/salud/ui/screens/home/HomeScreen.kt
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
