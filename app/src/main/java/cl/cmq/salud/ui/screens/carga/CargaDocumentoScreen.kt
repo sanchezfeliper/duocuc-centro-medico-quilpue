@@ -68,16 +68,19 @@ fun CargaDocumentoScreen(
             Spacer(modifier = Modifier.height(14.dp))
 
             // 1. Campo RUT Funcionario (OutlinedTextField)
+            // Meta 3: validación en vivo de obligatorio, formato y dígito verificador
             OutlinedTextField(
                 value = state.rut,
                 onValueChange = { vm.onRutChange(it) },
                 label = { Text("RUT Funcionario *") },
-                placeholder = { Text("Ej: 18.765.432-1") },
+                placeholder = { Text("Ej: 18.765.432-7") },
                 singleLine = true,
                 isError = state.rutError != null,
                 supportingText = {
                     if (state.rutError != null) {
                         Text(state.rutError ?: "", color = Red, fontSize = 10.sp)
+                    } else {
+                        Text("Formato 12.345.678-9; se verifica el dígito verificador", color = Grey, fontSize = 10.sp)
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -96,6 +99,12 @@ fun CargaDocumentoScreen(
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Tipo de documento *") },
+                    isError = state.tipoError != null,
+                    supportingText = {
+                        if (state.tipoError != null) {
+                            Text(state.tipoError ?: "", color = Red, fontSize = 10.sp)
+                        }
+                    },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = state.isDropdownExpanded) },
                     colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                     modifier = Modifier
@@ -138,6 +147,7 @@ fun CargaDocumentoScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             // 4. Descripción / Observaciones (OutlinedTextField multilínea)
+            // Meta 3: contador de caracteres visible para prevenir el máximo de 200 (E4)
             OutlinedTextField(
                 value = state.descripcion,
                 onValueChange = { vm.onDescripcionChange(it) },
@@ -149,6 +159,8 @@ fun CargaDocumentoScreen(
                 supportingText = {
                     if (state.descripcionError != null) {
                         Text(state.descripcionError ?: "", color = Red, fontSize = 10.sp)
+                    } else {
+                        Text("${state.descripcion.length}/200 caracteres (mínimo 5)", color = Grey, fontSize = 10.sp)
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
