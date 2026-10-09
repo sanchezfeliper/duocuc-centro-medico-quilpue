@@ -66,3 +66,4 @@ private fun badgeColors(estado: EstadoDocumento): Pair<Color, Color> = when (est
     EstadoDocumento.APROBADO -> Color(0xFFD4EDDA) to Color(0xFF155724)
     EstadoDocumento.RECHAZADO -> Color(0xFFF8D7DA) to Color(0xFF721C24)
     EstadoDocumento.VENCIDO  -> Color(0xFFE2E3E5) to Color(0xFF383D41)
+}
