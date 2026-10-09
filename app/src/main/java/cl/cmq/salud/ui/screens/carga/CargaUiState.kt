@@ -38,6 +38,12 @@ data class CargaUiState(
     val autenticidadError: String? = null,
     val generalError: String? = null,
 
+    // Meta 4: resumen de campos a corregir (banner) + eventos únicos para Snackbar
+    val camposConError: List<String> = emptyList(),
+    val errorEventId: Long = 0,
+    val successEventId: Long = 0,
+    val ultimoFolioRegistrado: Int? = null,
+
     // Estado de envío / procesamiento
     val isSubmitting: Boolean = false,
 
