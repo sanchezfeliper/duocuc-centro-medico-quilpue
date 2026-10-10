@@ -30,6 +30,12 @@ fun HomeScreen(
 ) {
     val state by vm.uiState.collectAsState()
 
+    // Meta 5: la navegacion es consecuencia del estado, no una llamada
+    // imperativa del boton. El ViewModel decide el cierre; la View reacciona.
+    LaunchedEffect(state.isSessionActive) {
+        if (!state.isSessionActive) onCerrarSesion()
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -118,11 +124,8 @@ fun HomeScreen(
 
             Spacer(Modifier.weight(1f))
 
-            // Cierre de sesion (accion administrativa)
-            TextButton(onClick = {
-                vm.cerrarSesion()
-                onCerrarSesion()
-            }) {
+            // Cierre de sesion (accion administrativa): solo emite el evento al ViewModel
+            TextButton(onClick = { vm.cerrarSesion() }) {
                 Text("Cerrar sesion", color = Navy, fontSize = 11.sp)
             }
         }

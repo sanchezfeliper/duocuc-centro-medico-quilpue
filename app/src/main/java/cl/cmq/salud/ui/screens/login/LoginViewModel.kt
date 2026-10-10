@@ -2,6 +2,7 @@ package cl.cmq.salud.ui.screens.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cl.cmq.salud.domain.validation.ValidadorRut
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +27,13 @@ class LoginViewModel : ViewModel() {
         val state = _uiState.value
         if (state.rut.isBlank() || state.password.isBlank()) {
             _uiState.update { it.copy(errorMessage = "Ingrese RUT y contraseña") }
+            return
+        }
+        // Meta 5: la regla de formato vive en el dominio compartido.
+        // Solo formato: la autenticación es simulada (S-01) y la identidad
+        // real vendrá del backend, por eso aqui no se exige dígito verificador.
+        if (!ValidadorRut.esFormatoValido(state.rut)) {
+            _uiState.update { it.copy(errorMessage = "Formato de RUT inválido (ej: 18.765.432-7)") }
             return
         }
         _uiState.update { it.copy(isAuthenticating = true, errorMessage = null) }
