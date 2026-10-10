@@ -41,19 +41,38 @@ class ConsultaViewModel(
         _uiState.update { it.copy(isBuscando = true, errorMessage = null) }
         viewModelScope.launch {
             val docs = repo.buscarPorRut(state.rut)
-            _uiState.update {
-                it.copy(
-                    isBuscando = false,
-                    funcionario = FuncionarioResumen(
-                        rut = state.rut,
-                        nombreCompleto = "Juan Perez",
-                        cargo = "Enfermero",
-                        centroSalud = "CESFAM Quilpue"
-                    ),
-                    documentos = docs
-                )
+            val funcionario = repo.buscarFuncionario(state.rut)
+
+            if (docs.isEmpty() && funcionario == null) {
+                // Meta 6: estado vacio real (CA-06 de la Meta 1, antes pendiente)
+                _uiState.update {
+                    it.copy(
+                        isBuscando = false,
+                        funcionario = null,
+                        documentos = emptyList(),
+                        documentosFiltrados = emptyList(),
+                        errorMessage = "No se encontró expediente para el RUT ${state.rut.trim()}. " +
+                            "Verifique el RUT o cargue un documento para este funcionario."
+                    )
+                }
+            } else {
+                // Meta 6: el resumen sale del repositorio (E2), no de datos hardcodeados
+                _uiState.update {
+                    it.copy(
+                        isBuscando = false,
+                        funcionario = funcionario?.let { f ->
+                            FuncionarioResumen(
+                                rut = f.rut,
+                                nombreCompleto = f.nombreCompleto,
+                                cargo = f.cargo,
+                                centroSalud = f.centroSalud
+                            )
+                        },
+                        documentos = docs
+                    )
+                }
+                aplicarFiltro()
             }
-            aplicarFiltro()
         }
     }
 
