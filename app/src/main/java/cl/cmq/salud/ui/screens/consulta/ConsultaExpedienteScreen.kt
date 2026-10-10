@@ -15,7 +15,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import cl.cmq.salud.domain.model.EstadoDocumento
 import cl.cmq.salud.ui.components.DocumentoCard
 import cl.cmq.salud.ui.components.PrimaryButton
 import cl.cmq.salud.ui.theme.*
@@ -28,15 +27,6 @@ fun ConsultaExpedienteScreen(
     vm: ConsultaViewModel = viewModel()
 ) {
     val state by vm.uiState.collectAsState()
-
-    val documentosFiltrados = remember(state.documentos, state.filtroActivo) {
-        when (state.filtroActivo) {
-            FiltroDocumento.TODOS -> state.documentos
-            FiltroDocumento.VIGENTES -> state.documentos.filter { it.estado == EstadoDocumento.VIGENTE }
-            FiltroDocumento.PENDIENTES -> state.documentos.filter { it.estado == EstadoDocumento.PENDIENTE }
-            FiltroDocumento.VENCIDOS -> state.documentos.filter { it.estado == EstadoDocumento.VENCIDO }
-        }
-    }
 
     Scaffold(
         topBar = {
@@ -160,7 +150,8 @@ fun ConsultaExpedienteScreen(
                     CircularProgressIndicator(color = Blue)
                 }
             } else if (state.funcionario != null) {
-                if (documentosFiltrados.isEmpty()) {
+                // Meta 5: la View solo dibuja el listado ya filtrado por el ViewModel
+                if (state.documentosFiltrados.isEmpty()) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -180,7 +171,7 @@ fun ConsultaExpedienteScreen(
                             .weight(1f),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(documentosFiltrados) { doc ->
+                        items(state.documentosFiltrados) { doc ->
                             DocumentoCard(
                                 documento = doc,
                                 onClick = onDocumentoClick

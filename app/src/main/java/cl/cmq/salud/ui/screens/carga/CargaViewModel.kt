@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import cl.cmq.salud.data.DocumentRepository
 import cl.cmq.salud.domain.model.Documento
 import cl.cmq.salud.domain.model.EstadoDocumento
+import cl.cmq.salud.domain.validation.ValidadorRut
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,9 +21,6 @@ class CargaViewModel(
     val uiState: StateFlow<CargaUiState> = _uiState.asStateFlow()
 
     companion object {
-        // Formato chileno con puntos, guión y dígito verificador
-        private val REGEX_RUT = Regex("^\\d{1,2}\\.\\d{3}\\.\\d{3}-[\\dkK]$")
-
         // Extensiones aceptadas por RF-08
         private val EXTENSIONES_VALIDAS = listOf(".pdf", ".jpg", ".jpeg", ".png")
 
@@ -196,20 +194,11 @@ class CargaViewModel(
 
     /** Campo obligatorio + formato + regla propia: dígito verificador (Módulo 11). */
     private fun validarRut(valor: String): String? {
-        val rut = valor.trim()
-        if (rut.isEmpty()) {
+        if (valor.trim().isEmpty()) {
             return "El RUT es obligatorio: ingrese el identificador del funcionario con puntos y guión, ej: 18.765.432-7."
         }
-        if (!REGEX_RUT.matches(rut)) {
-            return "Formato de RUT inválido: escríbalo como 18.765.432-7 (puntos miles, guión y dígito verificador, sin espacios)."
-        }
-        val cuerpo = rut.dropLast(2).filter { it.isDigit() }
-        val dvIngresado = rut.last().uppercaseChar()
-        val dvEsperado = calcularDigitoVerificador(cuerpo)
-        if (dvIngresado != dvEsperado) {
-            return "El dígito verificador no coincide: para este RUT el carácter tras el guión debiera ser '$dvEsperado' y se ingresó '$dvIngresado'. Verifique el RUT del funcionario."
-        }
-        return null
+        // Formato y dígito verificador viven en la capa de dominio (Meta 5)
+        return ValidadorRut.validar(valor)
     }
 
     /** Validación de selección: el tipo debe pertenecer al catálogo institucional (RN-08). */
@@ -253,25 +242,5 @@ class CargaViewModel(
             return "La descripción supera el máximo de $LARGO_MAX_DESCRIPCION caracteres (lleva ${descripcion.length}). Resuma la información esencial."
         }
         return null
-    }
-
-    /**
-     * Regla propia del proyecto (Meta 3): cálculo del dígito verificador
-     * del RUT chileno mediante Módulo 11. Devuelve un dígito '0' a '9'
-     * o la letra 'K' cuando el resultado es 10.
-     */
-    private fun calcularDigitoVerificador(cuerpo: String): Char {
-        var suma = 0
-        var multiplicador = 2
-        for (digito in cuerpo.reversed()) {
-            suma += digito.digitToInt() * multiplicador
-            multiplicador = if (multiplicador == 7) 2 else multiplicador + 1
-        }
-        val resto = suma % 11
-        return when (val dv = 11 - resto) {
-            11 -> '0'
-            10 -> 'K'
-            else -> ('0' + dv)
-        }
     }
 }

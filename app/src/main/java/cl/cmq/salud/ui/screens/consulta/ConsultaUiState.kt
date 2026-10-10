@@ -9,6 +9,8 @@ data class ConsultaUiState(
     val filtroActivo: FiltroDocumento = FiltroDocumento.TODOS,
     val funcionario: FuncionarioResumen? = null,
     val documentos: List<Documento> = emptyList(),
+    // Meta 5: el filtrado es logica del ViewModel; la View solo dibuja este listado
+    val documentosFiltrados: List<Documento> = emptyList(),
     val isBuscando: Boolean = false,
     val errorMessage: String? = null
 )

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cl.cmq.salud.data.DocumentRepository
 import cl.cmq.salud.domain.model.EstadoDocumento
+import cl.cmq.salud.domain.validation.ValidadorRut
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -30,8 +31,11 @@ class ConsultaViewModel(
             _uiState.update { it.copy(errorMessage = "Ingrese RUT o nombre") }
             return
         }
-        if (!validarRut(state.rut)) {
-            _uiState.update { it.copy(errorMessage = "RUT invalido") }
+        // Meta 5: la validacion de RUT (formato + digito verificador) vive en el
+        // dominio compartido; aqui solo se consume y se traduce a estado de UI.
+        val errorRut = ValidadorRut.validar(state.rut)
+        if (errorRut != null) {
+            _uiState.update { it.copy(errorMessage = errorRut) }
             return
         }
         _uiState.update { it.copy(isBuscando = true, errorMessage = null) }
@@ -53,21 +57,16 @@ class ConsultaViewModel(
         }
     }
 
+    /** Logica de filtrado del expediente: antes vivia en la View (Meta 5). */
     private fun aplicarFiltro() {
-        val state = _uiState.value
-        val original = state.documentos
-        val filtrada = when (state.filtroActivo) {
-            FiltroDocumento.TODOS -> original
-            FiltroDocumento.VIGENTES -> original.filter { it.estado == EstadoDocumento.VIGENTE }
-            FiltroDocumento.PENDIENTES -> original.filter { it.estado == EstadoDocumento.PENDIENTE }
-            FiltroDocumento.VENCIDOS -> original.filter { it.estado == EstadoDocumento.VENCIDO }
+        _uiState.update { state ->
+            val filtrada = when (state.filtroActivo) {
+                FiltroDocumento.TODOS -> state.documentos
+                FiltroDocumento.VIGENTES -> state.documentos.filter { it.estado == EstadoDocumento.VIGENTE }
+                FiltroDocumento.PENDIENTES -> state.documentos.filter { it.estado == EstadoDocumento.PENDIENTE }
+                FiltroDocumento.VENCIDOS -> state.documentos.filter { it.estado == EstadoDocumento.VENCIDO }
+            }
+            state.copy(documentosFiltrados = filtrada)
         }
-        // En esta iteracion el filtro se aplica en memoria sobre los datos ficticios.
-    }
-
-    private fun validarRut(rut: String): Boolean {
-        // Patron basico 12.345.678-9; validacion completa con digito verificador en la siguiente iteracion
-        val regex = Regex("^\\d{1,2}\\.\\d{3}\\.\\d{3}-[\\dkK]$")
-        return regex.matches(rut)
     }
 }
