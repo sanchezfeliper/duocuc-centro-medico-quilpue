@@ -30,6 +30,10 @@ fun HomeScreen(
 ) {
     val state by vm.uiState.collectAsState()
 
+    // Refresca el contador de pendientes cada vez que Home vuelve a primer plano
+    // (ej: al regresar de P06 Validacion, donde las decisiones ya se registraron).
+    LaunchedEffect(Unit) { vm.refrescarContador() }
+
     // Meta 5: la navegacion es consecuencia del estado, no una llamada
     // imperativa del boton. El ViewModel decide el cierre; la View reacciona.
     LaunchedEffect(state.isSessionActive) {

@@ -2,13 +2,22 @@
 package cl.cmq.salud.domain.model
 
 /**
- * Funcionario del Area Salud (entidad E2 del modelo de datos, subconjunto
- * usado por la consulta de expediente). Datos ficticios (RN-03).
+ * E2 Funcionario del modelo de datos preliminar: persona del Area Salud sobre
+ * quien recae la documentacion (RF-12, RF-13). Datos ficticios (RN-03).
+ *
+ * Meta 7: se incorporan los atributos faltantes de la entidad disenada;
+ * los campos de informacion laboral son opcionales porque el repositorio
+ * actual registra funcionarios "Por registrar" desde el formulario de carga.
  */
 data class Funcionario(
     val idFuncionario: Int,
-    val rut: String,
+    val rut: String,                    // UK, formato 12.345.678-9
     val nombreCompleto: String,
     val cargo: String,
-    val centroSalud: String
+    val centroSalud: String,            // FK -> CentroSalud (nombre de referencia)
+    val profesion: String? = null,
+    val tipoContrato: String? = null,   // planta / contrata / honorarios
+    val fechaIngreso: String? = null,   // DATE
+    val fechaNacimiento: String? = null, // DATE
+    val situacionContractual: String? = null // Vigente / Finiquitado / Licencia
 )
