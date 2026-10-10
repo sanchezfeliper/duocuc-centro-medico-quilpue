@@ -21,7 +21,7 @@ estado: PENDIENTE               tap en la tarjeta              estado: PENDIENTE
 descripcion: "..."                                             descripcion: "..."
 ```
 
-El documento que el usuario registra en el formulario **viaja por el repositorio compartido, aparece en el listado de consulta y se puede abrir en su detalle completo con todos sus metadatos (RN-08)**.
+El documento que el usuario registra en el formulario **viaja por el repositorio compartido, aparece en el listado de consulta y se puede abrir en su detalle completo con todos sus metadatos (RN-08)**. Además —corrección aplicada tras la revisión del equipo— **el RUT ingresado en el formulario es el dato que realmente asocia el documento a su funcionario**: `guardarDocumento` registra (o reutiliza) al funcionario del RUT, `buscarPorRut` filtra el expediente solo con los documentos de ese RUT, y P04 muestra el RUT asociado. El dato más importante del caso ya no se valida y se descarta: **determina a qué expediente pertenece todo lo demás**.
 
 | **Atributo** | **Valor** |
 |---|---|
@@ -134,6 +134,16 @@ class DetalleViewModel(
 
 Y en `DocumentRepository` se agregó `buscarPorId(idDocumento: Int): Documento?` (con latencia simulada), sobre el mismo almacenamiento en memoria que ya comparte P05 y P03 — por eso el documento recién cargado ya está disponible en detalle sin copias adicionales.
 
+### **3.5 El RUT también viaja: asociación real del documento (corrección)**
+
+La primera versión tenía una grieta detectada en revisión: el formulario validaba el RUT pero creaba el documento con `idFuncionario = 101` fijo, y `buscarPorRut` devolvía siempre todos los documentos. Se corrigió para que **el RUT ingresado sea el dato que gobierna el flujo**:
+
+* `Documento` (E4) incorporó `rutFuncionario`, y se creó el modelo `Funcionario` (E2, subconjunto) con el funcionario de demostración Juan Pérez · `18.765.432-7`.
+* `guardarDocumento` resuelve el funcionario a partir del RUT (`obtenerOCrearFuncionario`): lo reutiliza si existe o lo registra si es la primera carga para ese RUT (con nombre "Por registrar" hasta que exista mantención de funcionarios, RF-05).
+* `buscarPorRut(rut)` ahora **filtra**: el expediente muestra únicamente los documentos cuyo `rutFuncionario` coincide — cumplir RF-12 de verdad ("Listado de documentos" **del funcionario**), no un listado global.
+* El resumen del funcionario en P03 sale del repositorio (E2), no de datos hardcodeados; y si el RUT no tiene expediente, se muestra un estado vacío comprensible ("No se encontró expediente para el RUT…"), que era el caso **CA-06 de la Meta 1, pendiente desde entonces**.
+* P04 Detalle muestra "FUNCIONARIO ASOCIADO: RUT … · ID …", cerrando la trazabilidad del dato en las tres pantallas.
+
 ---
 
 ## **4. Cadena Completa del Dato Ingresado (Demostración)**
@@ -152,11 +162,14 @@ Cumple el ejemplo de la guía (Formulario → Detalle con el dato ingresado) usa
 | **Caso** | **Pasos** | **Resultado esperado** | **Estado** |
 |---|---|---|---|
 | **CP-01** | Consulta → buscar RUT válido → tap "Contrato de trabajo" | Navega al detalle: folio #1, nombre, tipo PDF, estado Vigente (badge azul), fecha y responsable correctos. | Aprobado |
-| **CP-02** | Cargar documento en P05 ("…", estado PENDIENTE, folio #N) → Consulta → tap en la nueva tarjeta | El detalle muestra **exactamente** los datos ingresados en el formulario, incluida la descripción y el estado PENDIENTE. | Aprobado |
+| **CP-02** | Cargar documento en P05 (RUT `18.765.432-7`, estado PENDIENTE, folio #N) → Consulta con ese RUT → tap en la nueva tarjeta | El detalle muestra **exactamente** los datos ingresados en el formulario, incluida la descripción, el estado PENDIENTE y el RUT asociado. | Aprobado |
 | **CP-03** | Detalle → botón Atrás del sistema o "Volver al expediente" | Regresa a P03 conservando la búsqueda y el filtro activo. | Aprobado |
 | **CP-04** | Abrir ruta con ID inexistente (`detalle/999` vía flujo forzado) | Estado de error comprensible: "No se encontró el documento #999…" + botón de retorno. | Aprobado |
 | **CP-05** | Detalle → tap "Registrar acceso de descarga" | Aparece confirmación verde "Acceso registrado en la bitácora (RF-18, simulado)"; el botón cambia a "Registrar otro acceso". | Aprobado |
 | **CP-06** | P03 → P04 → P03 → tap en otro documento | Navega al detalle del nuevo documento (la instancia del ViewModel es única por ID, sin datos cruzados). | Aprobado |
+| **CP-07** | Cargar documento en P05 para un RUT nuevo (ej: `12.345.678-5`) → Consultar ese RUT | El expediente muestra **solo** el documento recién cargado, con resumen "Funcionario 12.345.678-5 · Por registrar" (asociación real por RUT). | Aprobado |
+| **CP-08** | Consultar un RUT válido sin expediente (ej: `9.876.543-2`) | Estado vacío comprensible: "No se encontró expediente para el RUT 9.876.543-2. Verifique el RUT o cargue un documento…" (CA-06 de la Meta 1, ahora implementado). | Aprobado |
+| **CP-09** | Cargar en P05 para RUT nuevo → volver a consultar `18.765.432-7` | El documento del RUT nuevo **no aparece** en el expediente de Juan Pérez: cada expediente contiene solo sus documentos. | Aprobado |
 
 ---
 
@@ -165,7 +178,7 @@ Cumple el ejemplo de la guía (Formulario → Detalle con el dato ingresado) usa
 | **Pregunta de la Guía** | **Respuesta del Equipo CMQ Salud** |
 |---|---|
 | **¿Hay al menos dos pantallas conectadas?** | Sí: cuatro pares conectados con NavHost — Login→Home, Home→Consulta, Home→Carga y ahora **Consulta→Detalle (P03→P04, la nueva pantalla del mapa de navegación)**. |
-| **¿El dato ingresado se usa posteriormente?** | Sí: el documento creado en el formulario P05 aparece en el listado P03 y se abre en P04 con todos los metadatos tal como se ingresaron (CP-02). Es el ejemplo Formulario→Detalle de la pauta, materializado con las pantallas del caso. |
+| **¿El dato ingresado se usa posteriormente?** | Sí, ahora en sentido estricto: **el RUT del formulario determina el funcionario asociado** (el repositorio lo registra o reutiliza), el expediente de P03 **filtra solo los documentos de ese RUT**, y P04 muestra el RUT asociado. Además nombre, tipo, estado y descripción viajan intactos del formulario al detalle (CP-02, CP-07, CP-09). Es el ejemplo Formulario→Detalle de la pauta, materializado con las pantallas del caso. |
 | **¿Cómo se pasa información entre pantallas?** | Por **argumento de ruta** (`detalle/{idDocumento}`): el listado navega con `Detalle.crearRuta(id)`, el destino lo lee de `backStackEntry.arguments` y su ViewModel resuelve el documento contra la fuente única. Se pasa el ID, no el objeto, para no duplicar estado. |
 | **¿Dónde quedó la responsabilidad de cada pieza?** | MVVM intacto: la navegación vive en `AppNavHost` (único cableador), P04 tiene su `DetalleUiState` + `DetalleViewModel` (carga, error, acceso), y la pantalla solo dibuja y emite eventos. |
 

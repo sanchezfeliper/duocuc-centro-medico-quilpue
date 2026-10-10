@@ -157,7 +157,8 @@ class CargaViewModel(
 
             val nuevoDoc = Documento(
                 idDocumento = 0, // El repositorio asignará el ID correlativo
-                idFuncionario = 101,
+                idFuncionario = 0, // El repositorio lo resuelve a partir del RUT ingresado
+                rutFuncionario = state.rut.trim(), // Meta 6: el RUT del formulario asocia el documento
                 tipo = tipoFormato,
                 nombreArchivo = state.nombreArchivo.trim(),
                 estado = estadoInicial,

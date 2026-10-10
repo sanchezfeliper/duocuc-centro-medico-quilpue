@@ -142,7 +142,7 @@ fun DetalleDocumentoScreen(
                     BloqueMetadato(label = "CARGADO POR", value = doc.usuarioCarga)
                     BloqueMetadato(
                         label = "FUNCIONARIO ASOCIADO",
-                        value = "ID ${doc.idFuncionario}"
+                        value = "RUT ${doc.rutFuncionario} · ID ${doc.idFuncionario}"
                     )
                     BloqueMetadato(
                         label = "DESCRIPCIÓN",
