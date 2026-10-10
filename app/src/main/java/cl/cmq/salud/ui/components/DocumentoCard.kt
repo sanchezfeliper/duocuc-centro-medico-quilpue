@@ -60,7 +60,8 @@ fun DocumentoCard(
     }
 }
 
-private fun badgeColors(estado: EstadoDocumento): Pair<Color, Color> = when (estado) {
+/** Paleta de badges por estado; compartida con P04 Detalle (Meta 6). */
+fun badgeColors(estado: EstadoDocumento): Pair<Color, Color> = when (estado) {
     EstadoDocumento.VIGENTE  -> Color(0xFFD1ECF1) to Color(0xFF0C5460)
     EstadoDocumento.PENDIENTE -> Color(0xFFFFF3CD) to Color(0xFF856404)
     EstadoDocumento.APROBADO -> Color(0xFFD4EDDA) to Color(0xFF155724)

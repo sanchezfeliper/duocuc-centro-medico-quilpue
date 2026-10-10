@@ -27,6 +27,12 @@ class DocumentRepository {
         return documentosMemoria.toList()
     }
 
+    /** Consulta un documento por su ID (Meta 6 - destino Detalle P04). */
+    suspend fun buscarPorId(idDocumento: Int): Documento? {
+        delay(400) // simula latencia de red
+        return documentosMemoria.firstOrNull { it.idDocumento == idDocumento }
+    }
+
     /** Guarda un nuevo documento cargado (Meta 2 - Formulario funcional). */
     suspend fun guardarDocumento(documento: Documento): Documento {
         delay(800) // simula subida y registro en SharePoint / API

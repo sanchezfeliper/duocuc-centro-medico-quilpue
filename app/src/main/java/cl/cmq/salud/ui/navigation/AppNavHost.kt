@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import cl.cmq.salud.ui.screens.carga.CargaDocumentoScreen
 import cl.cmq.salud.ui.screens.consulta.ConsultaExpedienteScreen
+import cl.cmq.salud.ui.screens.detalle.DetalleDocumentoScreen
 import cl.cmq.salud.ui.screens.home.HomeScreen
 import cl.cmq.salud.ui.screens.login.LoginScreen
 
@@ -18,8 +19,7 @@ import cl.cmq.salud.ui.screens.login.LoginScreen
  * Unico lugar donde se cablean pantallas y transiciones: las pantallas
  * exponen eventos (lambdas) y este grafo decide a donde navegar. Los
  * Toast son feedback temporal para destinos aun no implementados
- * (P04 Detalle, P06 Validacion, P08 Bitacora); al existir, cada uno
- * tendra su ruta propia.
+ * (P06 Validacion, P08 Bitacora); al existir, cada uno tendra su ruta propia.
  */
 @Composable
 fun AppNavHost() {
@@ -62,9 +62,22 @@ fun AppNavHost() {
         composable(AppDestinos.Consulta.route) {
             ConsultaExpedienteScreen(
                 onVolver = { navController.popBackStack() },
+                // Meta 6: Listado -> Detalle pasando el ID por la ruta
                 onDocumentoClick = { idDocumento ->
-                    Toast.makeText(context, "Documento seleccionado: #$idDocumento (P04 próximamente)", Toast.LENGTH_SHORT).show()
+                    navController.navigate(AppDestinos.Detalle.crearRuta(idDocumento))
                 }
+            )
+        }
+
+        // Meta 6: P04 Detalle. El ID llega como argumento de navegacion y el
+        // ViewModel del destino resuelve el documento contra la fuente unica.
+        composable(AppDestinos.Detalle.route) { backStackEntry ->
+            val idDocumento = backStackEntry.arguments
+                ?.getString(AppDestinos.Detalle.ARG_ID)
+                ?.toIntOrNull() ?: 0
+            DetalleDocumentoScreen(
+                idDocumento = idDocumento,
+                onVolver = { navController.popBackStack() }
             )
         }
 
