@@ -82,7 +82,9 @@ class ConsultaViewModel(
             val filtrada = when (state.filtroActivo) {
                 FiltroDocumento.TODOS -> state.documentos
                 FiltroDocumento.VIGENTES -> state.documentos.filter { it.estado == EstadoDocumento.VIGENTE }
-                FiltroDocumento.PENDIENTES -> state.documentos.filter { it.estado == EstadoDocumento.PENDIENTE }
+                FiltroDocumento.PENDIENTES -> state.documentos.filter {
+                    it.estado == EstadoDocumento.PENDIENTE || it.estado == EstadoDocumento.PENDIENTE_CORRECCION
+                }
                 FiltroDocumento.VENCIDOS -> state.documentos.filter { it.estado == EstadoDocumento.VENCIDO }
             }
             state.copy(documentosFiltrados = filtrada)

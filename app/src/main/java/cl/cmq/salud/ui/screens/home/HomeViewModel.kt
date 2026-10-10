@@ -2,19 +2,22 @@ package cl.cmq.salud.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cl.cmq.salud.data.DocumentRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class HomeViewModel : ViewModel() {
+class HomeViewModel(
+    private val repo: DocumentRepository = DocumentRepository()
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init { cargarResumen() }
 
-    /** Carga resumen del usuario. Datos ficticios (RN-03). */
+    /** Carga resumen del usuario. Identidad ficticia (RN-03); el contador de pendientes sale del repositorio compartido. */
     private fun cargarResumen() {
         viewModelScope.launch {
             _uiState.value = HomeUiState(
@@ -22,9 +25,16 @@ class HomeViewModel : ViewModel() {
                 nombreUsuario = "Maria Gonzalez",
                 perfil = "Personal Administrativo",
                 centroSalud = "CESFAM Quilpue",
-                validacionesPendientes = 3,
+                validacionesPendientes = repo.listarPendientes().size,
                 documentosPorVencer = 2
             )
+        }
+    }
+
+    /** Refresca el contador al volver a Home (ej: tras decidir validaciones en P06). */
+    fun refrescarContador() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(validacionesPendientes = repo.listarPendientes().size)
         }
     }
 

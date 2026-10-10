@@ -54,17 +54,18 @@ fun DocumentoCard(
                 .background(badgeBg, RoundedCornerShape(8.dp))
                 .padding(horizontal = 6.dp, vertical = 2.dp)
         ) {
-            Text(documento.estado.name.lowercase().replaceFirstChar { it.uppercase() },
+            Text(documento.estado.etiqueta,
                 fontSize = 7.sp, fontWeight = FontWeight.SemiBold, color = badgeFg)
         }
     }
 }
 
-/** Paleta de badges por estado; compartida con P04 Detalle (Meta 6). */
+/** Paleta de badges por estado; compartida con P04 Detalle y P06 Validacion (Meta 6). */
 fun badgeColors(estado: EstadoDocumento): Pair<Color, Color> = when (estado) {
     EstadoDocumento.VIGENTE  -> Color(0xFFD1ECF1) to Color(0xFF0C5460)
     EstadoDocumento.PENDIENTE -> Color(0xFFFFF3CD) to Color(0xFF856404)
     EstadoDocumento.APROBADO -> Color(0xFFD4EDDA) to Color(0xFF155724)
     EstadoDocumento.RECHAZADO -> Color(0xFFF8D7DA) to Color(0xFF721C24)
+    EstadoDocumento.PENDIENTE_CORRECCION -> Color(0xFFFDEBD0) to Color(0xFF7E5109)
     EstadoDocumento.VENCIDO  -> Color(0xFFE2E3E5) to Color(0xFF383D41)
 }

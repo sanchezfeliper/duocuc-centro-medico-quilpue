@@ -12,6 +12,7 @@ import cl.cmq.salud.ui.screens.consulta.ConsultaExpedienteScreen
 import cl.cmq.salud.ui.screens.detalle.DetalleDocumentoScreen
 import cl.cmq.salud.ui.screens.home.HomeScreen
 import cl.cmq.salud.ui.screens.login.LoginScreen
+import cl.cmq.salud.ui.screens.validacion.ValidacionScreen
 
 /**
  * Grafo de navegacion de la app (Meta 5).
@@ -19,7 +20,7 @@ import cl.cmq.salud.ui.screens.login.LoginScreen
  * Unico lugar donde se cablean pantallas y transiciones: las pantallas
  * exponen eventos (lambdas) y este grafo decide a donde navegar. Los
  * Toast son feedback temporal para destinos aun no implementados
- * (P06 Validacion, P08 Bitacora); al existir, cada uno tendra su ruta propia.
+ * (P08 Bitacora); al existir, cada uno tendra su ruta propia.
  */
 @Composable
 fun AppNavHost() {
@@ -46,7 +47,7 @@ fun AppNavHost() {
                 onNavigateConsulta = { navController.navigate(AppDestinos.Consulta.route) },
                 onNavigateCarga = { navController.navigate(AppDestinos.Carga.route) },
                 onNavigateValidacion = {
-                    Toast.makeText(context, "Próximamente: Validaciones pendientes (P06)", Toast.LENGTH_SHORT).show()
+                    navController.navigate(AppDestinos.Validacion.route)
                 },
                 onNavigateBitacora = {
                     Toast.makeText(context, "Próximamente: Bitácora de auditoría (P08)", Toast.LENGTH_SHORT).show()
@@ -77,6 +78,14 @@ fun AppNavHost() {
                 ?.toIntOrNull() ?: 0
             DetalleDocumentoScreen(
                 idDocumento = idDocumento,
+                onVolver = { navController.popBackStack() }
+            )
+        }
+
+        // P06 Validacion (RF-15 a RF-17): bandeja de jefatura conectada al
+        // mismo repositorio compartido por Carga y Consulta.
+        composable(AppDestinos.Validacion.route) {
+            ValidacionScreen(
                 onVolver = { navController.popBackStack() }
             )
         }

@@ -366,7 +366,7 @@ fun CargaDocumentoScreen(
                     Text("• Folio: #${doc.idDocumento}", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                     Text("• Archivo: ${doc.nombreArchivo}", fontSize = 11.sp)
                     Text("• Tipo: ${doc.tipo}", fontSize = 11.sp)
-                    Text("• Estado: ${doc.estado.name}", fontSize = 11.sp, color = Green)
+                    Text("• Estado: ${doc.estado.etiqueta}", fontSize = 11.sp, color = Green)
                     Text("• Fecha: ${doc.fechaCarga}", fontSize = 11.sp)
                 }
             },

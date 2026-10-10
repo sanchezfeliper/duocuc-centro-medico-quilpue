@@ -131,7 +131,7 @@ fun DetalleDocumentoScreen(
                         Box(modifier = Modifier.weight(1f)) {
                             BloqueMetadato(
                                 label = "ESTADO",
-                                value = doc.estado.name.lowercase().replaceFirstChar { it.uppercase() },
+                                value = doc.estado.etiqueta,
                                 valueColor = badgeFg,
                                 containerColor = badgeBg
                             )
@@ -148,6 +148,14 @@ fun DetalleDocumentoScreen(
                         label = "DESCRIPCIÓN",
                         value = doc.descripcion ?: "Sin descripción registrada"
                     )
+
+                    // Decision del revisor (RF-16/RF-17): visible cuando el documento ya fue validado
+                    doc.comentarioValidacion?.let { comentario ->
+                        BloqueMetadato(
+                            label = "COMENTARIO DEL REVISOR",
+                            value = comentario
+                        )
+                    }
 
                     Spacer(Modifier.height(16.dp))
 

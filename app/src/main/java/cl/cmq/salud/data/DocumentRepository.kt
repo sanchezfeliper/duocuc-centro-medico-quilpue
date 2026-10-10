@@ -19,7 +19,8 @@ class DocumentRepository {
             Documento(1, 101, "18.765.432-7", "PDF", "Contrato de trabajo",
                 EstadoDocumento.VIGENTE, "2026-03-12", "RRHH"),
             Documento(2, 101, "18.765.432-7", "PDF", "Certificado capacitacion",
-                EstadoDocumento.PENDIENTE, "2026-09-20", "J. Perez"),
+                EstadoDocumento.PENDIENTE, "2026-09-20", "J. Perez",
+                fechaVencimiento = "2026-12-20"),
             Documento(3, 101, "18.765.432-7", "PDF", "Permiso medico",
                 EstadoDocumento.APROBADO, "2026-09-18", "J. Perez"),
             Documento(4, 101, "18.765.432-7", "JPG", "Anexo contrato",
@@ -73,5 +74,34 @@ class DocumentRepository {
         val nuevoDoc = documento.copy(idDocumento = nextId++, idFuncionario = idFuncionario)
         documentosMemoria.add(0, nuevoDoc)
         return nuevoDoc
+    }
+
+    /** Bandeja de jefatura: documentos en espera de decision (RF-15). */
+    suspend fun listarPendientes(): List<Documento> {
+        delay(500) // simula latencia de red
+        return documentosMemoria.filter {
+            it.estado == EstadoDocumento.PENDIENTE || it.estado == EstadoDocumento.PENDIENTE_CORRECCION
+        }
+    }
+
+    /**
+     * Registra la decision de validacion (RF-16 aprobar/rechazar, RF-17
+     * solicitar correccion) y deja el comentario del revisor en el expediente.
+     * Devuelve el documento actualizado, o null si el ID no existe.
+     */
+    suspend fun registrarDecision(
+        idDocumento: Int,
+        nuevoEstado: EstadoDocumento,
+        comentario: String
+    ): Documento? {
+        delay(600) // simula actualizacion en SharePoint / API
+        val indice = documentosMemoria.indexOfFirst { it.idDocumento == idDocumento }
+        if (indice == -1) return null
+        val actualizado = documentosMemoria[indice].copy(
+            estado = nuevoEstado,
+            comentarioValidacion = comentario.ifBlank { null }
+        )
+        documentosMemoria[indice] = actualizado
+        return actualizado
     }
 }
