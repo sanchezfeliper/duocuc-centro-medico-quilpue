@@ -1,6 +1,7 @@
 // test/cl/cmq/salud/data/DocumentRepositoryTest.kt
 package cl.cmq.salud.data
 
+import cl.cmq.salud.data.local.FakeDocumentoLocalDataSource
 import cl.cmq.salud.domain.model.Documento
 import cl.cmq.salud.domain.model.EstadoDocumento
 import kotlinx.coroutines.runBlocking
@@ -14,13 +15,13 @@ import org.junit.Test
  * Meta 8: casos validos e invalidos del repositorio compartido por
  * P03 Consulta, P05 Carga y P06 Validacion. Sin Android ni Compose.
  *
- * El almacenamiento vive en un companion (memoria compartida entre pantallas),
- * por lo que cada test crea SUS PROPIOS documentos: nunca depende del estado
- * que hayan dejado otros tests (determinismo).
+ * El almacenamiento vive en la fuente de datos local (Semana 9: SQLite en la
+ * app). Los tests inyectan un doble en memoria con la misma semilla, por lo
+ * que cada test parte de un estado conocido y nunca depende de otros.
  */
 class DocumentRepositoryTest {
 
-    private val repo = DocumentRepository()
+    private val repo = DocumentRepository(FakeDocumentoLocalDataSource())
 
     private var secuencia = 0
     private suspend fun nuevoDocumento(

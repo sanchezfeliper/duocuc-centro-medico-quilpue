@@ -4,6 +4,7 @@ package cl.cmq.salud.ui.screens.carga
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cl.cmq.salud.data.DocumentRepository
+import cl.cmq.salud.di.AppContainer
 import cl.cmq.salud.domain.model.Documento
 import cl.cmq.salud.domain.model.EstadoDocumento
 import cl.cmq.salud.domain.validation.ValidadorRut
@@ -14,7 +15,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class CargaViewModel(
-    private val repo: DocumentRepository = DocumentRepository()
+    private val repo: DocumentRepository = AppContainer.documentRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CargaUiState())

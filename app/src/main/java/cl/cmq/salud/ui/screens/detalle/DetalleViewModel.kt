@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import cl.cmq.salud.data.DocumentRepository
+import cl.cmq.salud.di.AppContainer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -52,7 +53,7 @@ class DetalleViewModel(
 
     /** Factory para crear el ViewModel con el argumento de navegacion (sin Hilt aun). */
     companion object {
-        fun factory(idDocumento: Int, repo: DocumentRepository = DocumentRepository()): ViewModelProvider.Factory =
+        fun factory(idDocumento: Int, repo: DocumentRepository = AppContainer.documentRepository): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T =

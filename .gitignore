@@ -16,3 +16,4 @@ local.properties
 
 # Artefactos de automatizacion UI (Meta 8)
 ui_dump.xml
+docs/evidencia_semana9/*.db
