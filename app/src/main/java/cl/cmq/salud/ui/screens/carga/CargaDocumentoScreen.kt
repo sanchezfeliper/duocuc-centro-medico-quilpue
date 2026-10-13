@@ -12,12 +12,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cl.cmq.salud.ui.components.ImagenLocal
 import cl.cmq.salud.ui.components.PrimaryButton
 import cl.cmq.salud.ui.components.SecondaryButton
 import cl.cmq.salud.ui.theme.*
@@ -33,6 +35,16 @@ fun CargaDocumentoScreen(
     vm: CargaViewModel = viewModel()
 ) {
     val state by vm.uiState.collectAsState()
+
+    // Semana 9.3 (RF-09): la captura con la camara ocupa toda la pantalla.
+    if (state.isCamaraAbierta) {
+        CamaraCapturaScreen(
+            onFotoCapturada = { ruta, huella -> vm.onFotoCapturada(ruta, huella) },
+            onCancelar = { vm.cerrarCamara() }
+        )
+        return
+    }
+
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Meta 4: respuesta visible ante error. Cada intento de guardado fallido
@@ -224,6 +236,79 @@ fun CargaDocumentoScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(text = opcion.label, fontSize = 12.sp, color = Navy)
+                    }
+                }
+            }
+
+            // Semana 9.3 (RF-09): al elegir "Captura física con cámara" se habilita
+            // la captura real con la cámara del dispositivo.
+            if (state.origen == OrigenDocumento.CAMARA) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Light),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "Fotografía del documento físico (RF-09)",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Navy
+                        )
+                        Text(
+                            text = "Se usa la cámara del dispositivo. La imagen queda en el " +
+                                "almacenamiento local y se asocia al documento.",
+                            fontSize = 10.sp,
+                            color = Grey,
+                            lineHeight = 14.sp
+                        )
+
+                        if (state.fotoRuta != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            ImagenLocal(
+                                rutaRelativa = state.fotoRuta!!,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(150.dp)
+                                    .clip(RoundedCornerShape(6.dp)),
+                                contentDescription = "Fotografía capturada del documento"
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "Captura guardada: ${state.fotoRuta}",
+                                fontSize = 10.sp,
+                                color = Green,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            state.fotoHash?.let { hash ->
+                                Text(
+                                    text = "SHA-256: ${hash.take(20)}… (RF-11)",
+                                    fontSize = 9.sp,
+                                    color = Grey
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        if (state.fotoRuta == null) {
+                            PrimaryButton(text = "Tomar fotografía", onClick = { vm.abrirCamara() })
+                        } else {
+                            PrimaryButton(
+                                text = "Volver a tomar la fotografía",
+                                onClick = { vm.abrirCamara() }
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            SecondaryButton(
+                                text = "Descartar fotografía",
+                                onClick = { vm.descartarFoto() }
+                            )
+                        }
+
+                        if (state.fotoError != null) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(state.fotoError ?: "", color = Red, fontSize = 10.sp)
+                        }
                     }
                 }
             }

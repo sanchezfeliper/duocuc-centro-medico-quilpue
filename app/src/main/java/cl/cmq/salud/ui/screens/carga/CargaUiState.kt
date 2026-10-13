@@ -18,6 +18,12 @@ data class CargaUiState(
     val requiereValidacionUrgente: Boolean = false,
     val declaraAutenticidad: Boolean = false,
 
+    // Semana 9.3: captura con la camara del dispositivo (RF-09).
+    // La foto se guarda como archivo; aqui solo viaja su ruta relativa y su huella.
+    val fotoRuta: String? = null,
+    val fotoHash: String? = null,
+    val isCamaraAbierta: Boolean = false,
+
     // Catálogo de tipos disponibles (RN-08)
     val tiposDisponibles: List<String> = listOf(
         "Contrato de trabajo",
@@ -36,6 +42,7 @@ data class CargaUiState(
     val nombreArchivoError: String? = null,
     val descripcionError: String? = null,
     val autenticidadError: String? = null,
+    val fotoError: String? = null,
     val generalError: String? = null,
 
     // Meta 4: resumen de campos a corregir (banner) + eventos únicos para Snackbar

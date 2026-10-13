@@ -22,7 +22,11 @@ data class Documento(
     val fechaVencimiento: String? = null,      // DATE nullable; politica pendiente (duda D-08)
     val comentarioValidacion: String? = null,  // comentario del revisor (RF-16/RF-17)
     val hashArchivo: String? = null,           // SHA-256 para detectar duplicados (RF-11)
-    val urlSharePoint: String? = null          // referencia unica sin copias (RN-05, simulada)
+    val urlSharePoint: String? = null,         // referencia unica sin copias (RN-05, simulada)
+    // Semana 9.3: ruta de la fotografia capturada con la camara del dispositivo
+    // (RF-09). Relativa al almacenamiento interno de la app; null si el origen
+    // del documento es un archivo digital y no hubo captura.
+    val rutaLocal: String? = null
 )
 
 /**

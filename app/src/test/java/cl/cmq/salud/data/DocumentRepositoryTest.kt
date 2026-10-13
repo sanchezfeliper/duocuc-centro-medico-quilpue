@@ -109,6 +109,28 @@ class DocumentRepositoryTest {
     }
 
     // ------------------------------------------------------------------
+    // Semana 9.3: captura con camara (RF-09/RF-11)
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `guardar documento con captura conserva la ruta local y la huella`() = runBlocking {
+        val guardado = repo.guardarDocumento(
+            Documento(
+                idDocumento = 0, idFuncionario = 0, rutFuncionario = "20.111.222-2",
+                tipo = "JPG", nombreArchivo = "captura_x.jpg",
+                estado = EstadoDocumento.VIGENTE, fechaCarga = "2026-10-12",
+                usuarioCarga = "Test", descripcion = "Documento capturado con camara",
+                hashArchivo = "hash123", rutaLocal = "fotos/captura_x.jpg"
+            )
+        )
+
+        val recuperado = repo.buscarPorId(guardado.idDocumento)
+        assertNotNull(recuperado)
+        assertEquals("fotos/captura_x.jpg", recuperado!!.rutaLocal)
+        assertEquals("hash123", recuperado.hashArchivo)
+    }
+
+    // ------------------------------------------------------------------
     // Casos INVALIDOS
     // ------------------------------------------------------------------
 

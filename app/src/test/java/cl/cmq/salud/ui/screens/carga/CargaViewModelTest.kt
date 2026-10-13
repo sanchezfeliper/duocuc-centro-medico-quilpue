@@ -128,4 +128,59 @@ class CargaViewModelTest {
         assertTrue(vm.uiState.value.rutError!!.contains("dígito verificador"))
         assertNull(vm.uiState.value.documentoCreado)
     }
+
+    // ------------------------------------------------------------------
+    // Semana 9.3: recurso nativo camara (RF-09)
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `origen camara sin captura no permite registrar`() = runTest(testDispatcher) {
+        val vm = CargaViewModel(DocumentRepository(FakeDocumentoLocalDataSource()))
+        vm.onRutChange("18.765.432-7")
+        vm.onOrigenChange(OrigenDocumento.CAMARA)
+        vm.onDescripcionChange("Documento de prueba valido")
+        vm.onAutenticidadChange(true)
+
+        vm.guardarDocumento()
+
+        val state = vm.uiState.value
+        assertNotNull(state.fotoError)
+        assertTrue(state.camposConError.contains("Fotografía del documento"))
+        assertNull(state.documentoCreado)   // nada se guardo
+    }
+
+    @Test
+    fun `captura con camara asocia la foto y registra el documento`() = runTest(testDispatcher) {
+        val vm = CargaViewModel(DocumentRepository(FakeDocumentoLocalDataSource()))
+        vm.onRutChange("18.765.432-7")
+        vm.onOrigenChange(OrigenDocumento.CAMARA)
+        vm.onFotoCapturada("fotos/captura_20261012_120000.jpg", "abc123")
+        vm.onDescripcionChange("Documento de prueba valido")
+        vm.onAutenticidadChange(true)
+
+        vm.guardarDocumento()
+        advanceUntilIdle()
+
+        val doc = vm.uiState.value.documentoCreado
+        assertNotNull(doc)
+        assertEquals("fotos/captura_20261012_120000.jpg", doc!!.rutaLocal)
+        assertEquals("abc123", doc.hashArchivo)          // huella SHA-256 (RF-11)
+        assertEquals("captura_20261012_120000.jpg", doc.nombreArchivo)
+        assertEquals("JPG", doc.tipo)                    // derivado de la extension de la captura
+        assertNull(vm.uiState.value.fotoError)
+    }
+
+    @Test
+    fun `volver a archivo digital descarta la captura tomada`() = runTest(testDispatcher) {
+        val vm = CargaViewModel(DocumentRepository(FakeDocumentoLocalDataSource()))
+        vm.onOrigenChange(OrigenDocumento.CAMARA)
+        vm.onFotoCapturada("fotos/captura_x.jpg", "hashX")
+
+        vm.onOrigenChange(OrigenDocumento.DIGITAL)
+
+        val state = vm.uiState.value
+        assertNull(state.fotoRuta)
+        assertNull(state.fotoHash)
+        assertEquals("", state.nombreArchivo) // el nombre provenia de la captura y se limpia
+    }
 }
