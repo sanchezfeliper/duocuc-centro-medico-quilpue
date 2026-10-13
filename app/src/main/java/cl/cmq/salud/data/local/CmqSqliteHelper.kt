@@ -25,7 +25,8 @@ class CmqSqliteHelper(context: Context) : SQLiteOpenHelper(
 
     companion object {
         const val NOMBRE_BD = "cmq_salud.db"
-        const val VERSION_BD = 1
+        // v2 (Semana 9.3): agrega la columna ruta_local (fotografia capturada).
+        const val VERSION_BD = 2
 
         const val TABLA_FUNCIONARIOS = "funcionarios"
         const val TABLA_DOCUMENTOS = "documentos"
@@ -64,7 +65,8 @@ class CmqSqliteHelper(context: Context) : SQLiteOpenHelper(
                 fecha_vencimiento TEXT,
                 comentario_validacion TEXT,
                 hash_archivo TEXT,
-                url_sharepoint TEXT
+                url_sharepoint TEXT,
+                ruta_local TEXT
             )
             """.trimIndent()
         )

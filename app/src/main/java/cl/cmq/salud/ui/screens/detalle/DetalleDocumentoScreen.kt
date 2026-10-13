@@ -10,11 +10,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cl.cmq.salud.ui.components.ImagenLocal
 import cl.cmq.salud.ui.components.PrimaryButton
 import cl.cmq.salud.ui.components.SecondaryButton
 import cl.cmq.salud.ui.components.badgeColors
@@ -93,27 +95,39 @@ fun DetalleDocumentoScreen(
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                         .verticalScroll(rememberScrollState())
                 ) {
-                    // Vista previa del documento (simulada)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(120.dp)
-                            .background(Navy, RoundedCornerShape(8.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = doc.tipo,
-                                color = Color.White,
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = "Vista previa del documento",
-                                color = Color.White.copy(alpha = 0.7f),
-                                fontSize = 10.sp
-                            )
+                    // Vista previa: la fotografía capturada si el documento vino de
+                    // la cámara (RF-09); si no, el marcador simulado de siempre.
+                    if (doc.rutaLocal != null) {
+                        ImagenLocal(
+                            rutaRelativa = doc.rutaLocal!!,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(220.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentDescription = "Fotografía capturada del documento"
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp)
+                                .background(Navy, RoundedCornerShape(8.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = doc.tipo,
+                                    color = Color.White,
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = "Vista previa del documento",
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    fontSize = 10.sp
+                                )
+                            }
                         }
                     }
 
@@ -127,6 +141,18 @@ fun DetalleDocumentoScreen(
                         value = "Almacenamiento local del dispositivo (SQLite)"
                     )
                     BloqueMetadato(label = "NOMBRE DEL ARCHIVO", value = doc.nombreArchivo)
+
+                    // Semana 9.3: procedencia de la captura y huella (RF-09/RF-11)
+                    doc.rutaLocal?.let { ruta ->
+                        BloqueMetadato(
+                            label = "ORIGEN DE CAPTURA",
+                            value = "Cámara del dispositivo (RF-09)"
+                        )
+                        BloqueMetadato(label = "ARCHIVO LOCAL", value = ruta)
+                        doc.hashArchivo?.let { hash ->
+                            BloqueMetadato(label = "HASH SHA-256 (RF-11)", value = hash)
+                        }
+                    }
 
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Box(modifier = Modifier.weight(1f)) {

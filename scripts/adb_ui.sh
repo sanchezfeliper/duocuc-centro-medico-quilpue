@@ -44,6 +44,24 @@ bounds_of_class() {  # $1=clase Android, $2=indice (0-based, orden del dump)
     | grep -o 'bounds="[^"]*"' | sed 's/bounds="//;s/"$//' | sed -n "$(( $2 + 1 ))p"
 }
 
+# Igual que bounds_of_text pero coincide con texto que CONTIENE el patron
+# (util cuando el texto lleva datos variables, p.ej. una ruta o un folio).
+bounds_of_text_contains() {
+  dump || return 1
+  local pat; pat=$(printf '%s' "$1" | sed 's/[.[\*^$]/\\&/g')
+  grep -o "text=\"[^\"]*$pat[^\"]*\"[^>]*bounds=\"\[[0-9]*,[0-9]*\]\[[0-9]*,[0-9]*\]\"" "$UIXML" \
+    | grep -o '\[[0-9]*,[0-9]*\]\[[0-9]*,[0-9]*\]' | head -1
+}
+
+# Localiza un nodo por su content-desc (para botones sin texto visible,
+# como el obturador de la camara).
+bounds_of_desc() {
+  dump || return 1
+  local pat; pat=$(printf '%s' "$1" | sed 's/[.[\*^$]/\\&/g')
+  grep -o "content-desc=\"$pat\"[^>]*bounds=\"\[[0-9]*,[0-9]*\]\[[0-9]*,[0-9]*\]\"" "$UIXML" \
+    | grep -o '\[[0-9]*,[0-9]*\]\[[0-9]*,[0-9]*\]' | head -1
+}
+
 center_of() {  # "[x1,y1][x2,y2]" -> "cx cy"
   local b=${1//'['/}; b=${b//']'/';'}
   local x1 y1 x2 y2
@@ -69,6 +87,57 @@ tap_edittext() {
   local b; b=$(bounds_of_class "android.widget.EditText" "$1") || return 1
   [ -z "$b" ] && { echo "NO_ENCONTRADO(edittext #$1)"; return 1; }
   echo -n "tap edittext #$1 -> "; tap_bounds "$b"
+}
+
+tap_desc() {
+  local b; b=$(bounds_of_desc "$1") || return 1
+  [ -z "$b" ] && { echo "NO_ENCONTRADO(desc): $1"; return 1; }
+  echo -n "tap desc '$1' -> "; tap_bounds "$b"
+}
+
+# Espera a que aparezca un content-desc (p.ej. el obturador, que puede tardar
+# en habilitarse mientras CameraX inicia la camara).
+wait_for_desc() {
+  local texto="$1" intentos="${2:-15}" i
+  for i in $(seq 1 "$intentos"); do
+    if [ -n "$(bounds_of_desc "$texto")" ]; then
+      echo "aparecio(desc): '$texto'"
+      return 0
+    fi
+    sleep 2
+  done
+  echo "NO_APARECIO(desc): $texto" >&2
+  return 1
+}
+
+# Toca el primer texto de la lista que exista (dialogos en distinto idioma)
+tap_primero() {
+  local t
+  for t in "$@"; do
+    if [ -n "$(bounds_of_text "$t")" ]; then tap_text "$t"; return 0; fi
+  done
+  echo "NO_ENCONTRADO(ninguno de): $*" >&2
+  return 1
+}
+
+# Toca un texto desplazando hacia arriba si aun no esta en pantalla
+tap_text_scroll() {
+  local t="$1" i
+  for i in 1 2 3 4; do
+    if tap_text "$t"; then return 0; fi
+    swipe_up
+  done
+  return 1
+}
+
+# Marca el primer CheckBox, desplazando hasta encontrarlo
+tap_checkbox_scroll() {
+  local i
+  for i in 1 2 3 4; do
+    if tap_checkbox; then return 0; fi
+    swipe_up
+  done
+  return 1
 }
 
 tap_checkbox() {
@@ -101,6 +170,48 @@ wait_for_text() {
     sleep 2
   done
   echo "NO_APARECIO(texto): $texto" >&2
+  return 1
+}
+
+# Espera a que aparezca un texto que CONTIENE el patron (datos variables)
+wait_for_text_contains() {
+  local texto="$1" intentos="${2:-10}" i
+  for i in $(seq 1 "$intentos"); do
+    if [ -n "$(bounds_of_text_contains "$texto")" ]; then
+      echo "aparecio(contiene): '$texto'"
+      return 0
+    fi
+    sleep 2
+  done
+  echo "NO_APARECIO(contiene): $texto" >&2
+  return 1
+}
+
+# Igual que wait_for_text pero desplazando hacia abajo (uiautomator solo dumpea
+# lo visible; un texto puede existir mas abajo en una pantalla con scroll).
+wait_for_text_scroll() {
+  local texto="$1" intentos="${2:-8}" i
+  for i in $(seq 1 "$intentos"); do
+    if [ -n "$(bounds_of_text "$texto")" ]; then
+      echo "aparecio(scroll): '$texto'"
+      return 0
+    fi
+    swipe_up
+  done
+  echo "NO_APARECIO(scroll): $texto" >&2
+  return 1
+}
+
+wait_for_text_contains_scroll() {
+  local texto="$1" intentos="${2:-8}" i
+  for i in $(seq 1 "$intentos"); do
+    if [ -n "$(bounds_of_text_contains "$texto")" ]; then
+      echo "aparecio(contiene+scroll): '$texto'"
+      return 0
+    fi
+    swipe_up
+  done
+  echo "NO_APARECIO(contiene+scroll): $texto" >&2
   return 1
 }
 

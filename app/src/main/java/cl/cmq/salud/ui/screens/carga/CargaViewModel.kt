@@ -64,7 +64,63 @@ class CargaViewModel(
     }
 
     fun onOrigenChange(value: OrigenDocumento) {
-        _uiState.update { it.copy(origen = value) }
+        _uiState.update { state ->
+            when (value) {
+                // Al volver a archivo digital se descarta la captura y, si el
+                // nombre provenia de la foto, se limpia para que el usuario lo escriba.
+                OrigenDocumento.DIGITAL -> state.copy(
+                    origen = value,
+                    fotoRuta = null,
+                    fotoHash = null,
+                    fotoError = null,
+                    nombreArchivo = if (state.fotoRuta != null &&
+                        state.nombreArchivo == nombreDeRuta(state.fotoRuta)
+                    ) "" else state.nombreArchivo
+                )
+
+                OrigenDocumento.CAMARA -> state.copy(origen = value, fotoError = null)
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Semana 9.3: captura con la camara del dispositivo (RF-09).
+    // El archivo y su huella los produce la capa de datos; el ViewModel solo
+    // guarda los datos resultantes (ruta y hash), sin conocer el sistema de archivos.
+    // ------------------------------------------------------------------
+
+    fun abrirCamara() {
+        _uiState.update { it.copy(isCamaraAbierta = true) }
+    }
+
+    fun cerrarCamara() {
+        _uiState.update { it.copy(isCamaraAbierta = false) }
+    }
+
+    /** Recibe la fotografia ya guardada por la camara y la asocia al formulario. */
+    fun onFotoCapturada(rutaRelativa: String, huellaSha256: String) {
+        _uiState.update {
+            it.copy(
+                fotoRuta = rutaRelativa,
+                fotoHash = huellaSha256.ifBlank { null },
+                // El nombre del archivo pasa a ser el de la captura (RF-09)
+                nombreArchivo = nombreDeRuta(rutaRelativa),
+                nombreArchivoError = null,
+                fotoError = null,
+                isCamaraAbierta = false
+            )
+        }
+    }
+
+    /** Descarta la captura actual para volver a tomarla. */
+    fun descartarFoto() {
+        _uiState.update {
+            it.copy(
+                fotoRuta = null,
+                fotoHash = null,
+                nombreArchivo = if (it.nombreArchivo == nombreDeRuta(it.fotoRuta)) "" else it.nombreArchivo
+            )
+        }
     }
 
     fun onRequiereValidacionChange(value: Boolean) {
@@ -112,13 +168,19 @@ class CargaViewModel(
         val tipoErr = validarTipo(state.tipoSeleccionado)
         val nombreErr = validarNombreArchivo(state.nombreArchivo)
         val descErr = validarDescripcion(state.descripcion)
+        // Semana 9.3 (RF-09): si el origen es captura fisica, la foto es obligatoria
+        val fotoErr = if (state.origen == OrigenDocumento.CAMARA && state.fotoRuta == null) {
+            "Debe capturar la fotografía del documento físico con la cámara del dispositivo antes de registrar (RF-09)."
+        } else {
+            null
+        }
         val autErr = if (!state.declaraAutenticidad) {
             "Debe marcar la declaración de autenticidad: confirme que el documento y sus metadatos son fidedignos (RN-08)."
         } else {
             null
         }
 
-        val errores = listOfNotNull(rutErr, tipoErr, nombreErr, descErr, autErr)
+        val errores = listOfNotNull(rutErr, tipoErr, nombreErr, descErr, fotoErr, autErr)
         if (errores.isNotEmpty()) {
             // Meta 4: respuesta visible garantizada en tres niveles: Snackbar
             // (evento único), banner con el resumen y errores por campo.
@@ -127,6 +189,7 @@ class CargaViewModel(
                 if (tipoErr != null) add("Tipo de documento")
                 if (nombreErr != null) add("Nombre del archivo")
                 if (descErr != null) add("Descripción / Observaciones")
+                if (fotoErr != null) add("Fotografía del documento")
                 if (autErr != null) add("Declaración de autenticidad")
             }
             _uiState.update {
@@ -135,6 +198,7 @@ class CargaViewModel(
                     tipoError = tipoErr,
                     nombreArchivoError = nombreErr,
                     descripcionError = descErr,
+                    fotoError = fotoErr,
                     autenticidadError = autErr,
                     camposConError = campos,
                     generalError = "No se pudo registrar el documento: ${errores.size} campo(s) requieren corrección. " +
@@ -165,7 +229,10 @@ class CargaViewModel(
                 estado = estadoInicial,
                 fechaCarga = "2026-10-08",
                 usuarioCarga = "M. Gonzalez (Admin)",
-                descripcion = state.descripcion.trim()
+                descripcion = state.descripcion.trim(),
+                // Semana 9.3 (RF-09/RF-11): la captura viaja con el documento
+                hashArchivo = state.fotoHash,
+                rutaLocal = state.fotoRuta
             )
 
             val guardado = repo.guardarDocumento(nuevoDoc)
@@ -180,6 +247,7 @@ class CargaViewModel(
                     tipoError = null,
                     nombreArchivoError = null,
                     descripcionError = null,
+                    fotoError = null,
                     autenticidadError = null,
                     generalError = null,
                     camposConError = emptyList()
@@ -193,6 +261,9 @@ class CargaViewModel(
     // Cada función devuelve null si el valor es válido, o un mensaje que
     // explica QUÉ está mal y CÓMO corregirlo.
     // ------------------------------------------------------------------
+
+    /** Nombre de archivo a partir de su ruta (ultimo segmento). */
+    private fun nombreDeRuta(ruta: String?): String = ruta?.substringAfterLast('/') ?: ""
 
     /** Campo obligatorio + formato + regla propia: dígito verificador (Módulo 11). */
     private fun validarRut(valor: String): String? {

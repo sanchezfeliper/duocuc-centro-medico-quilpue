@@ -30,6 +30,7 @@ fun Documento.toContentValues(conId: Boolean): ContentValues = ContentValues().a
     put("comentario_validacion", comentarioValidacion)
     put("hash_archivo", hashArchivo)
     put("url_sharepoint", urlSharePoint)
+    put("ruta_local", rutaLocal)
 }
 
 fun Cursor.toDocumento(): Documento = Documento(
@@ -45,7 +46,8 @@ fun Cursor.toDocumento(): Documento = Documento(
     fechaVencimiento = getString(getColumnIndexOrThrow("fecha_vencimiento")),
     comentarioValidacion = getString(getColumnIndexOrThrow("comentario_validacion")),
     hashArchivo = getString(getColumnIndexOrThrow("hash_archivo")),
-    urlSharePoint = getString(getColumnIndexOrThrow("url_sharepoint"))
+    urlSharePoint = getString(getColumnIndexOrThrow("url_sharepoint")),
+    rutaLocal = getString(getColumnIndexOrThrow("ruta_local"))
 )
 
 // ---------------------------------------------------------------------------
@@ -82,7 +84,7 @@ fun Cursor.toFuncionario(): Funcionario = Funcionario(
 val COLUMNAS_DOCUMENTO = arrayOf(
     "id_documento", "id_funcionario", "rut_funcionario", "tipo", "nombre_archivo",
     "estado", "fecha_carga", "usuario_carga", "descripcion", "fecha_vencimiento",
-    "comentario_validacion", "hash_archivo", "url_sharepoint"
+    "comentario_validacion", "hash_archivo", "url_sharepoint", "ruta_local"
 )
 
 val COLUMNAS_FUNCIONARIO = arrayOf(
