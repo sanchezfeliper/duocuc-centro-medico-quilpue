@@ -30,4 +30,11 @@ interface DocumentoLocalDataSource {
 
     /** Documentos en espera de decisión de jefatura (RF-15). */
     suspend fun listarPendientes(): List<Documento>
+
+    /**
+     * Total de documentos guardados en el dispositivo (Semana 9.2).
+     * Es el dato que la app muestra para hacer visible que la información
+     * vive realmente en el almacenamiento local y no solo en memoria.
+     */
+    suspend fun contarDocumentos(): Int
 }

@@ -77,6 +77,12 @@ class SqliteDocumentoLocalDataSource(
             if (filas > 0) documento else null
         }
 
+    override suspend fun contarDocumentos(): Int = withContext(Dispatchers.IO) {
+        helper.readableDatabase
+            .rawQuery("SELECT COUNT(*) FROM $TABLA_DOCUMENTOS", null)
+            .use { cursor -> if (cursor.moveToFirst()) cursor.getInt(0) else 0 }
+    }
+
     override suspend fun listarPendientes(): List<Documento> = withContext(Dispatchers.IO) {
         val estados = listOf(EstadoDocumento.PENDIENTE.name, EstadoDocumento.PENDIENTE_CORRECCION.name)
         val seleccion = "estado IN (?, ?)"

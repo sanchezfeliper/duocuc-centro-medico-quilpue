@@ -18,7 +18,7 @@ class HomeViewModel(
 
     init { cargarResumen() }
 
-    /** Carga resumen del usuario. Identidad ficticia (RN-03); el contador de pendientes sale del repositorio compartido. */
+    /** Carga resumen del usuario. Identidad ficticia (RN-03); los contadores salen del repositorio compartido. */
     private fun cargarResumen() {
         viewModelScope.launch {
             _uiState.value = HomeUiState(
@@ -27,15 +27,19 @@ class HomeViewModel(
                 perfil = "Personal Administrativo",
                 centroSalud = "CESFAM Quilpue",
                 validacionesPendientes = repo.listarPendientes().size,
+                documentosEnAlmacenamiento = repo.contarDocumentos(),
                 documentosPorVencer = 2
             )
         }
     }
 
-    /** Refresca el contador al volver a Home (ej: tras decidir validaciones en P06). */
+    /** Refresca los contadores al volver a Home (ej: tras cargar o validar documentos). */
     fun refrescarContador() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(validacionesPendientes = repo.listarPendientes().size)
+            _uiState.value = _uiState.value.copy(
+                validacionesPendientes = repo.listarPendientes().size,
+                documentosEnAlmacenamiento = repo.contarDocumentos()
+            )
         }
     }
 

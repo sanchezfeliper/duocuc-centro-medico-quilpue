@@ -3,9 +3,11 @@ package cl.cmq.salud.ui.screens.home
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -82,6 +84,43 @@ fun HomeScreen(
                 fontSize = 10.sp,
                 color = Grey
             )
+
+            Spacer(Modifier.height(14.dp))
+
+            // Semana 9.2: hace visible que los datos viven en el dispositivo
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Light),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(Green, RoundedCornerShape(6.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("DB", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            "${state.documentosEnAlmacenamiento} documentos en almacenamiento local",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Navy
+                        )
+                        Text(
+                            "Base SQLite del dispositivo · persisten al cerrar la app",
+                            fontSize = 9.sp,
+                            color = Grey
+                        )
+                    }
+                }
+            }
 
             Spacer(Modifier.height(14.dp))
 

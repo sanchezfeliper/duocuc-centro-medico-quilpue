@@ -43,6 +43,8 @@ class ConsultaViewModel(
         viewModelScope.launch {
             val docs = repo.buscarPorRut(state.rut)
             val funcionario = repo.buscarFuncionario(state.rut)
+            // Semana 9.2: cuántos documentos hay hoy en el dispositivo (SQLite)
+            val totalLocal = repo.contarDocumentos()
 
             if (docs.isEmpty() && funcionario == null) {
                 // Meta 6: estado vacio real (CA-06 de la Meta 1, antes pendiente)
@@ -52,6 +54,7 @@ class ConsultaViewModel(
                         funcionario = null,
                         documentos = emptyList(),
                         documentosFiltrados = emptyList(),
+                        totalEnAlmacenamiento = totalLocal,
                         errorMessage = "No se encontró expediente para el RUT ${state.rut.trim()}. " +
                             "Verifique el RUT o cargue un documento para este funcionario."
                     )
@@ -69,7 +72,8 @@ class ConsultaViewModel(
                                 centroSalud = f.centroSalud
                             )
                         },
-                        documentos = docs
+                        documentos = docs,
+                        totalEnAlmacenamiento = totalLocal
                     )
                 }
                 aplicarFiltro()

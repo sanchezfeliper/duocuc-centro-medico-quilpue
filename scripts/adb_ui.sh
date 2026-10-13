@@ -30,7 +30,10 @@ dump() {
 
 bounds_of_text() {
   dump || return 1
-  local pat; pat=$(printf '%s' "$1" | sed 's/[.[\*^$()+?{|]/\\&/g')
+  # Escapa solo lo que es especial en un BRE de grep. OJO: NO escapar
+  # ( ) + ? { | -> en GNU BRE "\(" "\|" etc. son operadores (grupo/alternancia)
+  # y dejarian de coincidir con el caracter literal.
+  local pat; pat=$(printf '%s' "$1" | sed 's/[.[\*^$]/\\&/g')
   grep -o "text=\"$pat\"[^>]*bounds=\"\[[0-9]*,[0-9]*\]\[[0-9]*,[0-9]*\]\"" "$UIXML" \
     | grep -o '\[[0-9]*,[0-9]*\]\[[0-9]*,[0-9]*\]' | head -1
 }

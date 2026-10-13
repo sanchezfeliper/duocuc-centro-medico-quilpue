@@ -12,6 +12,9 @@ data class ConsultaUiState(
     // Meta 5: el filtrado es logica del ViewModel; la View solo dibuja este listado
     val documentosFiltrados: List<Documento> = emptyList(),
     val isBuscando: Boolean = false,
+    // Semana 9.2: total de documentos guardados en el dispositivo, para dejar
+    // explícito que el expediente que se muestra viene del almacenamiento local.
+    val totalEnAlmacenamiento: Int = 0,
     val errorMessage: String? = null
 )
 
