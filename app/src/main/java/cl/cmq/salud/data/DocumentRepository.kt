@@ -1,92 +1,60 @@
 // data/DocumentRepository.kt
 package cl.cmq.salud.data
 
+import cl.cmq.salud.data.local.DocumentoLocalDataSource
 import cl.cmq.salud.domain.model.Documento
 import cl.cmq.salud.domain.model.EstadoDocumento
 import cl.cmq.salud.domain.model.Funcionario
-import kotlinx.coroutines.delay
 
-class DocumentRepository {
+/**
+ * Repositorio de documentos y funcionarios.
+ *
+ * Desde la Semana 9 delega el almacenamiento en la fuente de datos local
+ * (SQLite en el dispositivo), de modo que la información persiste entre
+ * ejecuciones de la app. La API pública se mantiene igual, por lo que los
+ * ViewModels no cambian y los tests pueden inyectar un doble de prueba.
+ */
+class DocumentRepository(
+    private val local: DocumentoLocalDataSource
+) {
 
-    companion object {
-        // Funcionarios ficticios de demostracion (RN-03, E2)
-        private val funcionariosMemoria = mutableListOf(
-            Funcionario(101, "18.765.432-7", "Juan Pérez", "Enfermero", "CESFAM Quilpué")
-        )
-        private var nextFuncionarioId = 102
-
-        private val documentosMemoria = mutableListOf(
-            Documento(1, 101, "18.765.432-7", "PDF", "Contrato de trabajo",
-                EstadoDocumento.VIGENTE, "2026-03-12", "RRHH"),
-            Documento(2, 101, "18.765.432-7", "PDF", "Certificado capacitacion",
-                EstadoDocumento.PENDIENTE, "2026-09-20", "J. Perez",
-                fechaVencimiento = "2026-12-20"),
-            Documento(3, 101, "18.765.432-7", "PDF", "Permiso medico",
-                EstadoDocumento.APROBADO, "2026-09-18", "J. Perez"),
-            Documento(4, 101, "18.765.432-7", "JPG", "Anexo contrato",
-                EstadoDocumento.RECHAZADO, "2026-09-05", "M. Gonzalez")
-        )
-        private var nextId = 5
-
-        /** Asocia (o registra) el funcionario del RUT y devuelve su ID. */
-        private fun obtenerOCrearFuncionario(rut: String): Int {
-            val normalizado = rut.trim()
-            val existente = funcionariosMemoria.firstOrNull { it.rut == normalizado }
-            if (existente != null) return existente.idFuncionario
-            val nuevo = Funcionario(
-                idFuncionario = nextFuncionarioId++,
-                rut = normalizado,
-                nombreCompleto = "Funcionario $normalizado",
-                cargo = "Por registrar",
-                centroSalud = "Por registrar"
-            )
-            funcionariosMemoria.add(nuevo)
-            return nuevo.idFuncionario
-        }
-    }
-
-    /** Busca el funcionario por RUT (E2). Datos ficticios (RN-03). */
-    suspend fun buscarFuncionario(rut: String): Funcionario? {
-        delay(200)
-        return funcionariosMemoria.firstOrNull { it.rut == rut.trim() }
-    }
+    /** Busca el funcionario por RUT (E2). */
+    suspend fun buscarFuncionario(rut: String): Funcionario? = local.buscarFuncionario(rut.trim())
 
     /** Expediente del funcionario: solo SUS documentos (RF-12). */
-    suspend fun buscarPorRut(rut: String): List<Documento> {
-        delay(600) // simula latencia de red
-        return documentosMemoria.filter { it.rutFuncionario == rut.trim() }
-    }
+    suspend fun buscarPorRut(rut: String): List<Documento> =
+        local.buscarDocumentosPorRut(rut.trim())
 
     /** Consulta un documento por su ID (Meta 6 - destino Detalle P04). */
-    suspend fun buscarPorId(idDocumento: Int): Documento? {
-        delay(400) // simula latencia de red
-        return documentosMemoria.firstOrNull { it.idDocumento == idDocumento }
-    }
+    suspend fun buscarPorId(idDocumento: Int): Documento? = local.buscarDocumentoPorId(idDocumento)
 
     /**
-     * Guarda un nuevo documento cargado (Meta 2 - Formulario funcional).
-     * El RUT ingresado en el formulario determina el funcionario asociado
-     * (Meta 6: el dato ingresado se usa posteriormente).
+     * Guarda un nuevo documento cargado (Meta 2).
+     * El RUT ingresado en el formulario determina el funcionario asociado:
+     * si es la primera carga para ese RUT, se registra el funcionario (RF-05
+     * pendiente) con datos por completar.
      */
     suspend fun guardarDocumento(documento: Documento): Documento {
-        delay(800) // simula subida y registro en SharePoint / API
-        val idFuncionario = obtenerOCrearFuncionario(documento.rutFuncionario)
-        val nuevoDoc = documento.copy(idDocumento = nextId++, idFuncionario = idFuncionario)
-        documentosMemoria.add(0, nuevoDoc)
-        return nuevoDoc
+        val rut = documento.rutFuncionario.trim()
+        val funcionario = local.buscarFuncionario(rut)
+            ?: local.insertarFuncionario(
+                Funcionario(
+                    idFuncionario = 0,
+                    rut = rut,
+                    nombreCompleto = "Funcionario $rut",
+                    cargo = "Por registrar",
+                    centroSalud = "Por registrar"
+                )
+            )
+        return local.insertarDocumento(documento.copy(idFuncionario = funcionario.idFuncionario))
     }
 
-    /** Bandeja de jefatura: documentos en espera de decision (RF-15). */
-    suspend fun listarPendientes(): List<Documento> {
-        delay(500) // simula latencia de red
-        return documentosMemoria.filter {
-            it.estado == EstadoDocumento.PENDIENTE || it.estado == EstadoDocumento.PENDIENTE_CORRECCION
-        }
-    }
+    /** Bandeja de jefatura: documentos en espera de decisión (RF-15). */
+    suspend fun listarPendientes(): List<Documento> = local.listarPendientes()
 
     /**
-     * Registra la decision de validacion (RF-16 aprobar/rechazar, RF-17
-     * solicitar correccion) y deja el comentario del revisor en el expediente.
+     * Registra la decisión de validación (RF-16 aprobar/rechazar, RF-17
+     * solicitar corrección) y deja el comentario del revisor en el expediente.
      * Devuelve el documento actualizado, o null si el ID no existe.
      */
     suspend fun registrarDecision(
@@ -94,14 +62,12 @@ class DocumentRepository {
         nuevoEstado: EstadoDocumento,
         comentario: String
     ): Documento? {
-        delay(600) // simula actualizacion en SharePoint / API
-        val indice = documentosMemoria.indexOfFirst { it.idDocumento == idDocumento }
-        if (indice == -1) return null
-        val actualizado = documentosMemoria[indice].copy(
-            estado = nuevoEstado,
-            comentarioValidacion = comentario.ifBlank { null }
+        val actual = local.buscarDocumentoPorId(idDocumento) ?: return null
+        return local.actualizarDocumento(
+            actual.copy(
+                estado = nuevoEstado,
+                comentarioValidacion = comentario.ifBlank { null }
+            )
         )
-        documentosMemoria[indice] = actualizado
-        return actualizado
     }
 }

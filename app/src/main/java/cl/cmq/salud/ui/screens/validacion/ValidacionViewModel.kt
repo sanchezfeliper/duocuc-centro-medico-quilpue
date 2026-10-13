@@ -4,6 +4,7 @@ package cl.cmq.salud.ui.screens.validacion
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cl.cmq.salud.data.DocumentRepository
+import cl.cmq.salud.di.AppContainer
 import cl.cmq.salud.domain.model.EstadoDocumento
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +18,7 @@ import kotlinx.coroutines.launch
  * eventos; las reglas (comentario obligatorio en rechazo/correccion) viven aqui.
  */
 class ValidacionViewModel(
-    private val repo: DocumentRepository = DocumentRepository()
+    private val repo: DocumentRepository = AppContainer.documentRepository
 ) : ViewModel() {
 
     companion object {

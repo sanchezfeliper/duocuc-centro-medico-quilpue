@@ -2,6 +2,7 @@
 package cl.cmq.salud.ui.screens.carga
 
 import cl.cmq.salud.data.DocumentRepository
+import cl.cmq.salud.data.local.FakeDocumentoLocalDataSource
 import cl.cmq.salud.domain.model.EstadoDocumento
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -51,7 +52,7 @@ class CargaViewModelTest {
 
     @Test
     fun `formulario completo valido registra el documento y muestra el dialogo de exito`() = runTest(testDispatcher) {
-        val vm = CargaViewModel(DocumentRepository())
+        val vm = CargaViewModel(DocumentRepository(FakeDocumentoLocalDataSource()))
         cargarFormularioValido(vm)
 
         vm.guardarDocumento()
@@ -69,7 +70,7 @@ class CargaViewModelTest {
 
     @Test
     fun `switch de derivacion a jefatura asigna estado PENDIENTE`() = runTest(testDispatcher) {
-        val vm = CargaViewModel(DocumentRepository())
+        val vm = CargaViewModel(DocumentRepository(FakeDocumentoLocalDataSource()))
         cargarFormularioValido(vm)
         vm.onRequiereValidacionChange(true)
 
@@ -85,7 +86,7 @@ class CargaViewModelTest {
 
     @Test
     fun `guardar con formulario vacio muestra errores por campo y no procesa`() = runTest(testDispatcher) {
-        val vm = CargaViewModel(DocumentRepository())
+        val vm = CargaViewModel(DocumentRepository(FakeDocumentoLocalDataSource()))
 
         vm.guardarDocumento()
 
@@ -101,7 +102,7 @@ class CargaViewModelTest {
 
     @Test
     fun `nombre sin extension es rechazado con mensaje`() = runTest(testDispatcher) {
-        val vm = CargaViewModel(DocumentRepository())
+        val vm = CargaViewModel(DocumentRepository(FakeDocumentoLocalDataSource()))
         vm.onRutChange("18.765.432-7")
         vm.onNombreArchivoChange("Reserva laboratorio")
         vm.onDescripcionChange("Documento de prueba valido")
@@ -115,7 +116,7 @@ class CargaViewModelTest {
 
     @Test
     fun `rut con digito verificador incorrecto es rechazado`() = runTest(testDispatcher) {
-        val vm = CargaViewModel(DocumentRepository())
+        val vm = CargaViewModel(DocumentRepository(FakeDocumentoLocalDataSource()))
         vm.onRutChange("18.765.432-1") // DV debiera ser 7
         vm.onNombreArchivoChange("contrato.pdf")
         vm.onDescripcionChange("Documento de prueba valido")

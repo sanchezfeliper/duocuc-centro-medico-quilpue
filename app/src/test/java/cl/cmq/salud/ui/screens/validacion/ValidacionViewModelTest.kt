@@ -2,6 +2,7 @@
 package cl.cmq.salud.ui.screens.validacion
 
 import cl.cmq.salud.data.DocumentRepository
+import cl.cmq.salud.data.local.FakeDocumentoLocalDataSource
 import cl.cmq.salud.domain.model.Documento
 import cl.cmq.salud.domain.model.EstadoDocumento
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +33,7 @@ import org.junit.Test
 class ValidacionViewModelTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
-    private val repo = DocumentRepository()
+    private val repo = DocumentRepository(FakeDocumentoLocalDataSource())
     private lateinit var vm: ValidacionViewModel
 
     @Before

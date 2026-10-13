@@ -3,13 +3,14 @@ package cl.cmq.salud.ui.screens.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cl.cmq.salud.data.DocumentRepository
+import cl.cmq.salud.di.AppContainer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class HomeViewModel(
-    private val repo: DocumentRepository = DocumentRepository()
+    private val repo: DocumentRepository = AppContainer.documentRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
