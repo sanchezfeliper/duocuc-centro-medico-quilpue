@@ -53,6 +53,13 @@ class DocumentRepository(
     suspend fun listarPendientes(): List<Documento> = local.listarPendientes()
 
     /**
+     * Total de documentos que hoy viven en el almacenamiento local del
+     * dispositivo (Semana 9.2). Lo usan las pantallas para mostrar el origen
+     * de los datos que el usuario está viendo.
+     */
+    suspend fun contarDocumentos(): Int = local.contarDocumentos()
+
+    /**
      * Registra la decisión de validación (RF-16 aprobar/rechazar, RF-17
      * solicitar corrección) y deja el comentario del revisor en el expediente.
      * Devuelve el documento actualizado, o null si el ID no existe.

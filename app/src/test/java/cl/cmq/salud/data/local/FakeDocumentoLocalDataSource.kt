@@ -49,6 +49,8 @@ class FakeDocumentoLocalDataSource : DocumentoLocalDataSource {
         return documento
     }
 
+    override suspend fun contarDocumentos(): Int = documentos.size
+
     override suspend fun listarPendientes(): List<Documento> =
         documentos
             .filter {

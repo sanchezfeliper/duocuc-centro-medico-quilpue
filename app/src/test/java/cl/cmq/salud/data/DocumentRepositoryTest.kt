@@ -2,6 +2,7 @@
 package cl.cmq.salud.data
 
 import cl.cmq.salud.data.local.FakeDocumentoLocalDataSource
+import cl.cmq.salud.data.local.SemillaDocumentos
 import cl.cmq.salud.domain.model.Documento
 import cl.cmq.salud.domain.model.EstadoDocumento
 import kotlinx.coroutines.runBlocking
@@ -91,6 +92,20 @@ class DocumentRepositoryTest {
         val encontrado = repo.buscarPorId(1) // documento semilla del repositorio
         assertNotNull(encontrado)
         assertEquals(1, encontrado!!.idDocumento)
+    }
+
+    // ------------------------------------------------------------------
+    // Semana 9.2: visualizacion de lo guardado (conteo local)
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `contarDocumentos parte con la semilla y crece al guardar`() = runBlocking {
+        val inicial = repo.contarDocumentos()
+        assertEquals(SemillaDocumentos.documentos().size, inicial)
+
+        nuevoDocumento(rut = "20.111.222-2")
+
+        assertEquals(inicial + 1, repo.contarDocumentos())
     }
 
     // ------------------------------------------------------------------

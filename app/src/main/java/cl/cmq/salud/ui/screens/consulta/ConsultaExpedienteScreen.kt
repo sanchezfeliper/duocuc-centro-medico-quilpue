@@ -136,7 +136,18 @@ fun ConsultaExpedienteScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Semana 9.2: deja visible que el expediente viene del almacenamiento local
+                Text(
+                    text = "${state.documentos.size} documentos del expediente · leídos del " +
+                        "almacenamiento local (${state.totalEnAlmacenamiento} en el dispositivo)",
+                    fontSize = 9.sp,
+                    color = Grey,
+                    lineHeight = 12.sp
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
             }
 
             // Indicador de búsqueda

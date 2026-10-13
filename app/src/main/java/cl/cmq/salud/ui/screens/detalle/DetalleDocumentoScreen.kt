@@ -121,6 +121,11 @@ fun DetalleDocumentoScreen(
 
                     // Metadatos del expediente (RN-08)
                     BloqueMetadato(label = "FOLIO", value = "#${doc.idDocumento}")
+                    // Semana 9.2: deja explícito que el documento se leyó del dispositivo
+                    BloqueMetadato(
+                        label = "ORIGEN",
+                        value = "Almacenamiento local del dispositivo (SQLite)"
+                    )
                     BloqueMetadato(label = "NOMBRE DEL ARCHIVO", value = doc.nombreArchivo)
 
                     Row(modifier = Modifier.fillMaxWidth()) {
