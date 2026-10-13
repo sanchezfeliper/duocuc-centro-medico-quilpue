@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Artefactos de automatizacion UI (Meta 8)
+ui_dump.xml
