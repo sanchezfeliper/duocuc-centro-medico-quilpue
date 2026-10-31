@@ -41,7 +41,11 @@ class CargaViewModelTest {
 
     private fun cargarFormularioValido(vm: CargaViewModel) {
         vm.onRutChange("18.765.432-7")          // DV correcto (Módulo 11)
-        vm.onNombreArchivoChange("contrato_juan_perez.pdf")
+        vm.onFileSelected(
+            "content://test/contrato_juan_perez.pdf",
+            "contrato_juan_perez.pdf",
+            "application/pdf"
+        )
         vm.onDescripcionChange("Contrato vigente del funcionario")
         vm.onAutenticidadChange(true)
     }

@@ -9,9 +9,9 @@ package cl.cmq.salud.ui.navigation
 sealed class AppDestinos(val route: String) {
     object Login : AppDestinos("login")
     object Home : AppDestinos("home")
-    object Consulta : AppDestinos("consulta")
+    object Expediente : AppDestinos("expediente")
     object Carga : AppDestinos("carga")
-    object Validacion : AppDestinos("validacion")
+    object Revision : AppDestinos("revision")
     object Detalle : AppDestinos("detalle/{idDocumento}") {
         /** Construye la ruta concreta con el documento seleccionado. */
         fun crearRuta(idDocumento: Int): String = "detalle/$idDocumento"

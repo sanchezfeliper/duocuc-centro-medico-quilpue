@@ -24,6 +24,14 @@ data class CargaUiState(
     val fotoHash: String? = null,
     val isCamaraAbierta: Boolean = false,
 
+    // RF-07: seleccion real de archivo digital (PDF / JPG / JPEG / PNG).
+    // Se persiste el acceso URI (como string, compatible con SQLite y tests JVM)
+    // y se almacena el nombre real del archivo.
+    val fileUri: String? = null,
+    val fileNombre: String? = null,
+    val fileMimeType: String? = null,
+    val isFilePickerOpen: Boolean = false,
+
     // Catálogo de tipos disponibles (RN-08)
     val tiposDisponibles: List<String> = listOf(
         "Contrato de trabajo",
@@ -43,6 +51,7 @@ data class CargaUiState(
     val descripcionError: String? = null,
     val autenticidadError: String? = null,
     val fotoError: String? = null,
+    val digitalError: String? = null,
     val generalError: String? = null,
 
     // Meta 4: resumen de campos a corregir (banner) + eventos únicos para Snackbar

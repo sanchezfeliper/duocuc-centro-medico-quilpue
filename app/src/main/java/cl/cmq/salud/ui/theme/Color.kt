@@ -2,19 +2,69 @@ package cl.cmq.salud.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+/*
+ * Sistema visual institucional CMQ Salud — rediseño UI.
+ *
+ * Los colores se centralizan como roles semánticos; las pantallas deben
+ * consumirlos por su nombre semántico, no por valores literales.
+ *
+ * Paleta de referencia (guía de rediseño UI):
+ *   Tinta spruce  #173F38  → texto principal, títulos y marca CMQ
+ *   Teal de acción #1D6B5A → acción primaria, selección y enlaces
+ *   Fondo papel   #F5F7F4  → fondo general de pantalla
+ *   Superficie    #FFFFFF  → formularios, paneles y contenido
+ *   Sage suave    #E8F0EB  → selección, foco suave y agrupaciones
+ *   Texto secund. #536A62  → ayuda, descripción y metadatos
+ *   Borde         #D5E0DA  → separadores y contornos de control
+ *   Atención      #82580A / #FFF1CE → vencimientos y advertencias
+ *   Error         #A8343F / #FDEBEC → errores y rechazo
+ *   Éxito         #216A49 / #E7F3EB → guardado y aprobación
+ */
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// --- Tinta principal / marca ---
+val Spruce = Color(0xFF173F38)            // texto principal, títulos, marca CMQ
 
-val Navy = Color(0xFF1F3A5F)
-val Blue = Color(0xFF2E5E8C)
-val Green = Color(0xFF2E8C5E)
-val Light = Color(0xFFF4F7FA)
-val Grey = Color(0xFF7A8794)
+// --- Color de acción ---
+val Teal = Color(0xFF1D6B5A)              // acción primaria, selección, enlaces
 
-val Red = Color(0xFFD32F2F)
-val Border = Color(0xFFE0E0E0)
+// --- Fondos ---
+val Paper = Color(0xFFF5F7F4)             // fondo general de pantalla
+val Surface = Color(0xFFFFFFFF)           // formularios, paneles, contenido
+
+// --- Acento suave ---
+val SoftSage = Color(0xFFE8F0EB)          // selección, foco suave, agrupaciones
+
+// --- Texto ---
+val TextSecondary = Color(0xFF536A62)     // ayuda, descripción, metadatos
+
+// --- Contornos ---
+val Divider = Color(0xFFD5E0DA)           // separadores y contornos de control
+
+// --- Atención (advertencias, vencimientos) ---
+val AttentionInk = Color(0xFF82580A)      // tinta de advertencia
+val AttentionBg = Color(0xFFFFF1CE)       // fondo de advertencia
+
+// --- Error / rechazo ---
+val Error = Color(0xFFA8343F)             // tinta de error
+val ErrorBg = Color(0xFFFDEBEC)           // fondo de error
+
+// --- Éxito / aprobación ---
+val Success = Color(0xFF216A49)           // tinta de éxito
+val SuccessBg = Color(0xFFE7F3EB)         // fondo de éxito
+
+// --- Aliases de compatibilidad con el código existente ---
+// Nuevas pantallas deben usar los nombres semánticos de arriba.
+// Estos aliases preservan las referencias ya establecidas sin romper el build.
+val Navy = Spruce
+val Blue = Teal
+val Green = Teal
+val Light = SoftSage        // alias: fondo de selección y agrupaciones suaves
+val Grey = TextSecondary
+val Red = Error
+val Border = Divider
+val Background = Paper
+val SurfaceWhite = Surface
+val Mint = SuccessBg        // alias: fondo de estados de éxito
+val Warm = AttentionBg
+val WarmInk = AttentionInk
+val Accent = Color(0xFFE6B15B)            // resaltado de badges/acento secundario

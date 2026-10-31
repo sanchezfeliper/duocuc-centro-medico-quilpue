@@ -1,71 +1,93 @@
 package cl.cmq.salud.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cl.cmq.salud.domain.model.Documento
-import cl.cmq.salud.domain.model.EstadoDocumento
-import cl.cmq.salud.ui.theme.*
+import cl.cmq.salud.ui.theme.Border
+import cl.cmq.salud.ui.theme.Blue
+import cl.cmq.salud.ui.theme.Grey
+import cl.cmq.salud.ui.theme.Light
+import cl.cmq.salud.ui.theme.Navy
+import cl.cmq.salud.ui.theme.SurfaceWhite
+import cl.cmq.salud.ui.theme.SoftSage
 
 @Composable
 fun DocumentoCard(
     documento: Documento,
     onClick: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    selected: Boolean = false
 ) {
-    val (badgeBg, badgeFg) = badgeColors(documento.estado)
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(Color.White, RoundedCornerShape(5.dp))
-            .border(1.dp, Border, RoundedCornerShape(5.dp))
-            .clickable { onClick(documento.idDocumento) }
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Card(
+        onClick = { onClick(documento.idDocumento) },
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = if (selected) SoftSage else SurfaceWhite),
+        border = BorderStroke(if (selected) 2.dp else 1.dp, if (selected) Blue else Border),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        // Icono de tipo
-        Box(
+        Row(
             modifier = Modifier
-                .size(28.dp)
-                .background(Red, RoundedCornerShape(3.dp)),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(documento.tipo, color = Color.White, fontSize = 7.sp, fontWeight = FontWeight.Bold)
-        }
-        Spacer(Modifier.width(8.dp))
-        // Info
-        Column(modifier = Modifier.weight(1f)) {
-            Text(documento.nombreArchivo, fontSize = 9.sp, fontWeight = FontWeight.SemiBold, color = Navy)
-            Text("${documento.fechaCarga} · ${documento.usuarioCarga}", fontSize = 7.5.sp, color = Grey)
-        }
-        // Badge de estado
-        Box(
-            modifier = Modifier
-                .background(badgeBg, RoundedCornerShape(8.dp))
-                .padding(horizontal = 6.dp, vertical = 2.dp)
-        ) {
-            Text(documento.estado.etiqueta,
-                fontSize = 7.sp, fontWeight = FontWeight.SemiBold, color = badgeFg)
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
+                contentDescription = null,
+                tint = Blue,
+                modifier = Modifier.size(24.dp)
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = documento.nombreArchivo,
+                    style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Navy,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.size(4.dp))
+                Text(
+                    text = "${documento.tipo} · ${documento.fechaCarga}",
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    color = Grey,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "Cargado por ${documento.usuarioCarga}",
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    color = Grey,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            StatusChip(estado = documento.estado)
         }
     }
-}
-
-/** Paleta de badges por estado; compartida con P04 Detalle y P06 Validacion (Meta 6). */
-fun badgeColors(estado: EstadoDocumento): Pair<Color, Color> = when (estado) {
-    EstadoDocumento.VIGENTE  -> Color(0xFFD1ECF1) to Color(0xFF0C5460)
-    EstadoDocumento.PENDIENTE -> Color(0xFFFFF3CD) to Color(0xFF856404)
-    EstadoDocumento.APROBADO -> Color(0xFFD4EDDA) to Color(0xFF155724)
-    EstadoDocumento.RECHAZADO -> Color(0xFFF8D7DA) to Color(0xFF721C24)
-    EstadoDocumento.PENDIENTE_CORRECCION -> Color(0xFFFDEBD0) to Color(0xFF7E5109)
-    EstadoDocumento.VENCIDO  -> Color(0xFFE2E3E5) to Color(0xFF383D41)
 }
