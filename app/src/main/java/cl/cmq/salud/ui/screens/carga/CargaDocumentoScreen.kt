@@ -88,7 +88,11 @@ fun CargaDocumentoScreen(
     onVolver: () -> Unit,
     onCargaExitosa: (Int) -> Unit = {},
     onMainDestinationSelected: (Int) -> Unit = {},
-    vm: CargaViewModel = viewModel()
+    sessionRut: String,
+    vm: CargaViewModel = viewModel(
+        key = "carga-$sessionRut",
+        factory = CargaViewModel.factory(sessionRut)
+    )
 ) {
     val state by vm.uiState.collectAsState()
     val ctx = LocalContext.current

@@ -33,6 +33,9 @@ class FakeDocumentoLocalDataSource : DocumentoLocalDataSource {
     override suspend fun buscarDocumentosPorRut(rut: String): List<Documento> =
         documentos.filter { it.rutFuncionario == rut.trim() }.sortedByDescending { it.idDocumento }
 
+    override suspend fun buscarDocumentosPorCargador(rut: String): List<Documento> =
+        documentos.filter { it.usuarioCarga == rut.trim() }.sortedByDescending { it.fechaCarga }
+
     override suspend fun buscarDocumentoPorId(idDocumento: Int): Documento? =
         documentos.firstOrNull { it.idDocumento == idDocumento }
 

@@ -1,7 +1,6 @@
 package cl.cmq.salud.ui.screens.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -21,8 +19,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,10 +35,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Assignment
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Icon
 import cl.cmq.salud.ui.components.AlertCard
 import cl.cmq.salud.ui.components.AppTopBar
@@ -50,8 +42,6 @@ import cl.cmq.salud.ui.components.MainBottomNavBar
 import cl.cmq.salud.ui.theme.Accent
 import cl.cmq.salud.ui.theme.Background
 import cl.cmq.salud.ui.theme.Grey
-import cl.cmq.salud.ui.theme.Light
-import cl.cmq.salud.ui.theme.Mint
 import cl.cmq.salud.ui.theme.Navy
 import cl.cmq.salud.ui.theme.SoftSage
 import cl.cmq.salud.ui.theme.Spruce
@@ -65,7 +55,7 @@ fun HomeScreen(
     onNavigateExpediente: () -> Unit,
     onNavigateCarga: () -> Unit,
     onNavigateRevision: () -> Unit,
-    onNavigateBitacora: () -> Unit,
+    onNavigatePerfil: () -> Unit,
     onCerrarSesion: () -> Unit
 ) {
     val state by vm.uiState.collectAsState()
@@ -112,6 +102,7 @@ fun HomeScreen(
                         1 -> onNavigateExpediente()
                         2 -> onNavigateCarga()
                         3 -> onNavigateRevision()
+                        4 -> onNavigatePerfil()
                     }
                 }
             )
@@ -136,22 +127,6 @@ fun HomeScreen(
                 onClick = onNavigateRevision
             )
 
-            SectionHeading(title = "Accesos rápidos", detail = "Tareas del centro")
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                color = SurfaceWhite,
-                border = androidx.compose.foundation.BorderStroke(1.dp, cl.cmq.salud.ui.theme.Divider)
-            ) {
-                Column {
-                    HomeActionRow(Icons.Default.Search, "Consultar expediente", "Busca por RUT de funcionario", onNavigateExpediente)
-                    HorizontalDivider(color = cl.cmq.salud.ui.theme.Divider.copy(alpha = 0.7f), modifier = Modifier.padding(start = 58.dp))
-                    HomeActionRow(Icons.Default.Add, "Cargar documento", "Registra un archivo o captura", onNavigateCarga)
-                    HorizontalDivider(color = cl.cmq.salud.ui.theme.Divider.copy(alpha = 0.7f), modifier = Modifier.padding(start = 58.dp))
-                    HomeActionRow(Icons.Default.Menu, "Bitácora de auditoría", "Consulta los accesos registrados", onNavigateBitacora)
-                }
-            }
-
             if (state.documentosPorVencer > 0) {
                 val vencimiento = if (state.documentosPorVencer == 1) {
                     "1 documento está próximo a vencer. Revisa su expediente."
@@ -160,8 +135,6 @@ fun HomeScreen(
                 }
                 AlertCard(text = vencimiento)
             }
-
-            LocalStorageCard(total = state.documentosEnAlmacenamiento)
         }
     }
 }
@@ -248,77 +221,3 @@ private fun PriorityTaskCard(pendientes: Int, onClick: () -> Unit) {
     }
 }
 
-@Composable
-private fun SectionHeading(title: String, detail: String) {
-    Column(modifier = Modifier.padding(top = 4.dp)) {
-        Text(
-            text = title,
-            color = Spruce,
-            style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(Modifier.height(2.dp))
-        Text(
-            text = detail,
-            color = Grey,
-            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
-        )
-    }
-}
-
-@Composable
-private fun LocalStorageCard(total: Int) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Light)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Icon(Icons.Default.Storage, contentDescription = null, tint = Teal, modifier = Modifier.size(24.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    "Almacenamiento local activo",
-                    color = Spruce,
-                    style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    if (total == 1) "1 documento · guardado en este dispositivo (SQLite)"
-                    else "$total documentos · guardados en este dispositivo (SQLite)",
-                    color = Grey,
-                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall
-                )
-            }
-            Text("SQLite", color = Teal, style = androidx.compose.material3.MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-private fun HomeActionRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    detail: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 72.dp)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        Icon(icon, contentDescription = null, tint = Teal, modifier = Modifier.size(24.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, color = Spruce, style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
-            Text(detail, color = Grey, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
-        }
-        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Teal, modifier = Modifier.size(20.dp))
-    }
-}

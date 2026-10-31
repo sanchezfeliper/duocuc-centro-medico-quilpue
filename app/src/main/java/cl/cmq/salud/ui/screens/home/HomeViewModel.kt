@@ -25,9 +25,8 @@ class HomeViewModel(
                 rut = "12.345.678-9",
                 nombreUsuario = "Maria Gonzalez",
                 perfil = "Personal Administrativo",
-                centroSalud = "CESFAM Quilpue",
+                centroSalud = "CESFAM Quilpué",
                 validacionesPendientes = repo.listarPendientes().size,
-                documentosEnAlmacenamiento = repo.contarDocumentos(),
                 documentosPorVencer = 2
             )
         }
@@ -37,8 +36,7 @@ class HomeViewModel(
     fun refrescarContador() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
-                validacionesPendientes = repo.listarPendientes().size,
-                documentosEnAlmacenamiento = repo.contarDocumentos()
+                validacionesPendientes = repo.listarPendientes().size
             )
         }
     }

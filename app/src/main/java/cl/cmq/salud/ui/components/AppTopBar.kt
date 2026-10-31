@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cl.cmq.salud.ui.theme.Background
+import cl.cmq.salud.ui.theme.Surface
 import cl.cmq.salud.ui.theme.Blue
 import cl.cmq.salud.ui.theme.Light
 import cl.cmq.salud.ui.theme.Navy
@@ -51,7 +51,7 @@ fun AppTopBar(
             } else {
                 Text(
                     text = title,
-                    style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
+                    style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
                     color = Navy,
                 )
             }
@@ -76,10 +76,10 @@ fun AppTopBar(
             ac?.invoke()
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Background,
+            containerColor = Surface,
             titleContentColor = Navy,
             navigationIconContentColor = Blue
         ),
-        modifier = modifier
+        modifier = modifier.background(Surface)
     )
 }

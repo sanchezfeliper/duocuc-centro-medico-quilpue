@@ -4,6 +4,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -14,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -54,7 +59,9 @@ fun BottomNavBar(
     NavigationBar(
         modifier = modifier
             .fillMaxWidth()
-            .selectableGroup(),
+            .selectableGroup()
+            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+            .border(BorderStroke(1.dp, Divider), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
         containerColor = Surface,
         contentColor = Spruce,
         tonalElevation = 0.dp
@@ -100,7 +107,8 @@ private val MainNavigationItems = listOf(
     NavItem(Icons.Default.Home, "Inicio", "Ir a inicio"),
     NavItem(Icons.Default.Search, "Expediente", "Consultar expediente"),
     NavItem(Icons.Default.Add, "Cargar", "Cargar documento"),
-    NavItem(Icons.Default.CheckCircle, "Revisión", "Bandeja de revisión")
+    NavItem(Icons.Default.CheckCircle, "Revisión", "Bandeja de revisión"),
+    NavItem(Icons.Default.Person, "Perfil", "Perfil")
 )
 
 @Composable

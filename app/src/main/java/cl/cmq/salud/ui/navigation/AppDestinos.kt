@@ -12,6 +12,7 @@ sealed class AppDestinos(val route: String) {
     object Expediente : AppDestinos("expediente")
     object Carga : AppDestinos("carga")
     object Revision : AppDestinos("revision")
+    object Perfil : AppDestinos("perfil")
     object Detalle : AppDestinos("detalle/{idDocumento}") {
         /** Construye la ruta concreta con el documento seleccionado. */
         fun crearRuta(idDocumento: Int): String = "detalle/$idDocumento"

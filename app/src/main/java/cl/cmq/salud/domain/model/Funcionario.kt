@@ -19,5 +19,7 @@ data class Funcionario(
     val tipoContrato: String? = null,   // planta / contrata / honorarios
     val fechaIngreso: String? = null,   // DATE
     val fechaNacimiento: String? = null, // DATE
-    val situacionContractual: String? = null // Vigente / Finiquitado / Licencia
+    val situacionContractual: String? = null, // Vigente / Finiquitado / Licencia
+    val correo: String? = null,
+    val perfilRol: String? = null
 )

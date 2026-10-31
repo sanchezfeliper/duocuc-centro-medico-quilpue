@@ -20,6 +20,9 @@ interface DocumentoLocalDataSource {
 
     suspend fun buscarDocumentosPorRut(rut: String): List<Documento>
 
+    /** Documentos cargados por el usuario (RF-31), ordenados del más reciente. */
+    suspend fun buscarDocumentosPorCargador(rut: String): List<Documento>
+
     suspend fun buscarDocumentoPorId(idDocumento: Int): Documento?
 
     /** Inserta el documento y devuelve la entidad con el ID (folio) asignado. */

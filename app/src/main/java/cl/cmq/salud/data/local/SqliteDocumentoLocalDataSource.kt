@@ -48,6 +48,18 @@ class SqliteDocumentoLocalDataSource(
             }
         }
 
+    override suspend fun buscarDocumentosPorCargador(rut: String): List<Documento> =
+        withContext(Dispatchers.IO) {
+            helper.readableDatabase.query(
+                TABLA_DOCUMENTOS, COLUMNAS_DOCUMENTO, "usuario_carga = ?", arrayOf(rut.trim()),
+                null, null, "fecha_carga DESC, id_documento DESC"
+            ).use { cursor ->
+                buildList {
+                    while (cursor.moveToNext()) add(cursor.toDocumento())
+                }
+            }
+        }
+
     override suspend fun buscarDocumentoPorId(idDocumento: Int): Documento? =
         withContext(Dispatchers.IO) {
             helper.readableDatabase.query(

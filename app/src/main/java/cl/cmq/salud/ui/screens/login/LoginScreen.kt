@@ -55,14 +55,14 @@ import androidx.compose.foundation.shape.CircleShape
 @Composable
 fun LoginScreen(
     vm: LoginViewModel = viewModel(),
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: (String) -> Unit
 ) {
     val state by vm.uiState.collectAsState()
     val passwordVisible = rememberSaveable { mutableStateOf(false) }
 
     // Reacciona al cambio de estado de autenticación del ViewModel.
     LaunchedEffect(state.isAuthenticated) {
-        if (state.isAuthenticated) onLoginSuccess()
+        if (state.isAuthenticated) onLoginSuccess(state.rut.trim())
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Background)) {
@@ -172,7 +172,7 @@ fun LoginScreen(
                     )
                     Spacer(Modifier.height(14.dp))
                     Text(
-                        "¿Primera vez? Solicita acceso a la persona administradora de tu centro.",
+                        "¿Primera vez o necesitas recuperar el acceso? Consulta con la persona administradora de tu centro.",
                         color = Grey,
                         fontSize = 12.sp,
                         lineHeight = 17.sp

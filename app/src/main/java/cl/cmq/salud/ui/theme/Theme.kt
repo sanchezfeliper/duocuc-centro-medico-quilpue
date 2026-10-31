@@ -5,6 +5,8 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.dp
 
 /*
  * Esquema de colores CMQ Salud — rediseño UI.
@@ -63,6 +65,14 @@ private val LightColorScheme = lightColorScheme(
     inverseOnSurface = Surface
 )
 
+private val CMQShapes = androidx.compose.material3.Shapes(
+    extraSmall = RoundedCornerShape(6.dp),
+    small = RoundedCornerShape(10.dp),
+    medium = RoundedCornerShape(14.dp),
+    large = RoundedCornerShape(18.dp),
+    extraLarge = RoundedCornerShape(24.dp)
+)
+
 @Composable
 fun CMQSaludTheme(
     darkTheme: Boolean = false,
@@ -74,6 +84,7 @@ fun CMQSaludTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = CMQShapes,
         content = content
     )
 }

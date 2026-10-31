@@ -4,8 +4,8 @@ package cl.cmq.salud.di
 import android.content.Context
 import cl.cmq.salud.data.DocumentRepository
 import cl.cmq.salud.data.local.AlmacenFotosLocales
-import cl.cmq.salud.data.local.CmqSqliteHelper
-import cl.cmq.salud.data.local.SqliteDocumentoLocalDataSource
+import cl.cmq.salud.data.local.RoomDocumentoLocalDataSource
+import cl.cmq.salud.data.room.database.CmqSaludDatabase
 
 /**
  * Contenedor de dependencias (Meta Semana 9).
@@ -33,8 +33,8 @@ object AppContainer {
     fun inicializar(context: Context) {
         val app = context.applicationContext
         if (repositorio == null) {
-            val helper = CmqSqliteHelper(app)
-            repositorio = DocumentRepository(SqliteDocumentoLocalDataSource(helper))
+            val database = CmqSaludDatabase.getInstance(app)
+            repositorio = DocumentRepository(RoomDocumentoLocalDataSource(database.documentoDao))
         }
         if (almacenFotosInterno == null) {
             almacenFotosInterno = AlmacenFotosLocales(app)

@@ -2,6 +2,7 @@
 package cl.cmq.salud.ui.screens.carga
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import cl.cmq.salud.data.DocumentRepository
 import cl.cmq.salud.di.AppContainer
@@ -16,13 +17,18 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 class CargaViewModel(
-    private val repo: DocumentRepository = AppContainer.documentRepository
+    private val repo: DocumentRepository = AppContainer.documentRepository,
+    private val sessionRut: String = "12.345.678-9"
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(CargaUiState())
-    val uiState: StateFlow<CargaUiState> = _uiState.asStateFlow()
-
     companion object {
+        fun factory(sessionRut: String): ViewModelProvider.Factory =
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                    CargaViewModel(sessionRut = sessionRut) as T
+            }
+
         // Extensiones aceptadas por RF-08
         private val EXTENSIONES_VALIDAS = listOf(".pdf", ".jpg", ".jpeg", ".png")
 
@@ -34,6 +40,9 @@ class CargaViewModel(
         private const val LARGO_MIN_DESCRIPCION = 5
         private const val LARGO_MAX_DESCRIPCION = 200
     }
+
+    private val _uiState = MutableStateFlow(CargaUiState())
+    val uiState: StateFlow<CargaUiState> = _uiState.asStateFlow()
 
     // ------------------------------------------------------------------
     // Eventos de entrada (Ciclo: Ingresar -> Modificar)
@@ -319,7 +328,7 @@ class CargaViewModel(
                 nombreArchivo = state.nombreArchivo.trim(),
                 estado = estadoInicial,
                 fechaCarga = LocalDate.now().toString(),
-                usuarioCarga = "M. Gonzalez (Admin)",
+                usuarioCarga = sessionRut,
                 descripcion = state.descripcion.trim(),
                 // Semana 9.3 (RF-09/RF-11): la captura viaja con el documento
                 hashArchivo = state.fotoHash,
