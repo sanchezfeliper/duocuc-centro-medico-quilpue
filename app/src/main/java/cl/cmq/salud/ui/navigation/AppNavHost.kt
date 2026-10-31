@@ -27,6 +27,21 @@ fun AppNavHost() {
     val navController = rememberNavController()
     val context = LocalContext.current
 
+    fun navigateToMainDestination(index: Int) {
+        val route = when (index) {
+            0 -> AppDestinos.Home.route
+            1 -> AppDestinos.Expediente.route
+            2 -> AppDestinos.Carga.route
+            3 -> AppDestinos.Revision.route
+            else -> return
+        }
+        navController.navigate(route) {
+            popUpTo(AppDestinos.Home.route) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = AppDestinos.Login.route
@@ -44,11 +59,9 @@ fun AppNavHost() {
 
         composable(AppDestinos.Home.route) {
             HomeScreen(
-                onNavigateConsulta = { navController.navigate(AppDestinos.Consulta.route) },
-                onNavigateCarga = { navController.navigate(AppDestinos.Carga.route) },
-                onNavigateValidacion = {
-                    navController.navigate(AppDestinos.Validacion.route)
-                },
+                onNavigateExpediente = { navigateToMainDestination(1) },
+                onNavigateCarga = { navigateToMainDestination(2) },
+                onNavigateRevision = { navigateToMainDestination(3) },
                 onNavigateBitacora = {
                     Toast.makeText(context, "Próximamente: Bitácora de auditoría (P08)", Toast.LENGTH_SHORT).show()
                 },
@@ -60,9 +73,10 @@ fun AppNavHost() {
             )
         }
 
-        composable(AppDestinos.Consulta.route) {
+        composable(AppDestinos.Expediente.route) {
             ConsultaExpedienteScreen(
                 onVolver = { navController.popBackStack() },
+                onMainDestinationSelected = ::navigateToMainDestination,
                 // Meta 6: Listado -> Detalle pasando el ID por la ruta
                 onDocumentoClick = { idDocumento ->
                     navController.navigate(AppDestinos.Detalle.crearRuta(idDocumento))
@@ -84,15 +98,17 @@ fun AppNavHost() {
 
         // P06 Validacion (RF-15 a RF-17): bandeja de jefatura conectada al
         // mismo repositorio compartido por Carga y Consulta.
-        composable(AppDestinos.Validacion.route) {
+        composable(AppDestinos.Revision.route) {
             ValidacionScreen(
-                onVolver = { navController.popBackStack() }
+                onVolver = { navController.popBackStack() },
+                onMainDestinationSelected = ::navigateToMainDestination
             )
         }
 
         composable(AppDestinos.Carga.route) {
             CargaDocumentoScreen(
                 onVolver = { navController.popBackStack() },
+                onMainDestinationSelected = ::navigateToMainDestination,
                 onCargaExitosa = { idDocumento ->
                     Toast.makeText(context, "Documento #$idDocumento registrado exitosamente", Toast.LENGTH_SHORT).show()
                     navController.navigate(AppDestinos.Home.route) {

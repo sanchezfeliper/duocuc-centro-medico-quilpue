@@ -237,7 +237,7 @@ private fun VistaCamara(
                     else -> "Encuadre el documento y presione el botón para capturar"
                 },
                 color = Color.White,
-                fontSize = 11.sp
+                fontSize = 12.sp
             )
             Spacer(Modifier.height(12.dp))
             Box(

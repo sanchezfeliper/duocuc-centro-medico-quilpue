@@ -56,7 +56,7 @@ fun ImagenLocal(
             modifier = modifier.background(Light),
             contentAlignment = Alignment.Center
         ) {
-            Text("Cargando imagen…", fontSize = 10.sp, color = Grey)
+            Text("Cargando imagen…", fontSize = 12.sp, color = Grey)
         }
     }
 }

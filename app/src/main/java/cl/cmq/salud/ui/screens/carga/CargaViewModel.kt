@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 class CargaViewModel(
     private val repo: DocumentRepository = AppContainer.documentRepository
@@ -78,7 +79,18 @@ class CargaViewModel(
                     ) "" else state.nombreArchivo
                 )
 
-                OrigenDocumento.CAMARA -> state.copy(origen = value, fotoError = null)
+                // Al cambiar a cámara se descarta la selección digital
+                OrigenDocumento.CAMARA -> state.copy(
+                    origen = value,
+                    fotoError = null,
+                    fileUri = null,
+                    fileNombre = null,
+                    fileMimeType = null,
+                    digitalError = null,
+                    nombreArchivo = if (state.fileUri != null &&
+                        state.nombreArchivo == state.fileNombre
+                    ) "" else state.nombreArchivo
+                )
             }
         }
     }
@@ -119,6 +131,72 @@ class CargaViewModel(
                 fotoRuta = null,
                 fotoHash = null,
                 nombreArchivo = if (it.nombreArchivo == nombreDeRuta(it.fotoRuta)) "" else it.nombreArchivo
+            )
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // RF-07: seleccion real de archivo digital (PDF / JPG / JPEG / PNG).
+    // El Composable lanza el selector del sistema; el ViewModel valida
+    // el tipo por extensión y almacena el URI con su nombre real.
+    // ------------------------------------------------------------------
+
+    /**
+     * Procesa el archivo seleccionado por el usuario mediante el selector
+     * del sistema. Valida la extensión y, si no es aceptable, deja un error
+     * que el Composable comunica de inmediato.
+     */
+    fun onFileSelected(uriString: String, nombre: String, mimeType: String?) {
+        val extension = nombre.substringAfterLast('.', "").lowercase()
+        val esValido = extension in listOf("pdf", "jpg", "jpeg", "png")
+
+        if (!esValido) {
+            _uiState.update {
+                it.copy(
+                    digitalError = "Tipo de archivo no admitido: solo se aceptan .pdf, .jpg, .jpeg o .png.",
+                    isFilePickerOpen = false
+                )
+            }
+            return
+        }
+        _uiState.update {
+            it.copy(
+                fileUri = uriString,
+                fileNombre = nombre,
+                fileMimeType = mimeType,
+                // El nombre del archivo pasa a ser el del archivo seleccionado
+                nombreArchivo = nombre,
+                nombreArchivoError = null,
+                digitalError = null,
+                isFilePickerOpen = false
+            )
+        }
+    }
+
+    /** Quita el archivo digital seleccionado para volver a elegir otro. */
+    fun clearFileSelected() {
+        _uiState.update { state ->
+            val nombre = if (state.nombreArchivo == state.fileNombre) "" else state.nombreArchivo
+            state.copy(
+                fileUri = null,
+                fileNombre = null,
+                fileMimeType = null,
+                digitalError = null,
+                nombreArchivo = nombre
+            )
+        }
+    }
+
+    /** Alterna el estado visual del selector de archivos. */
+    fun setFilePickerOpen(open: Boolean) {
+        _uiState.update { it.copy(isFilePickerOpen = open) }
+    }
+
+    fun onFileSelectionFailed(message: String) {
+        _uiState.update {
+            it.copy(
+                digitalError = message,
+                isFilePickerOpen = false
             )
         }
     }
@@ -174,13 +252,19 @@ class CargaViewModel(
         } else {
             null
         }
+        // RF-07: si el origen es archivo digital, el archivo seleccionado es obligatorio
+        val digitalErr = if (state.origen == OrigenDocumento.DIGITAL && state.fileUri == null) {
+            "Debe seleccionar un archivo digital (PDF, JPG o PNG) antes de registrar, usando el selector del sistema."
+        } else {
+            null
+        }
         val autErr = if (!state.declaraAutenticidad) {
             "Debe marcar la declaración de autenticidad: confirme que el documento y sus metadatos son fidedignos (RN-08)."
         } else {
             null
         }
 
-        val errores = listOfNotNull(rutErr, tipoErr, nombreErr, descErr, fotoErr, autErr)
+        val errores = listOfNotNull(rutErr, tipoErr, nombreErr, descErr, fotoErr, digitalErr, autErr)
         if (errores.isNotEmpty()) {
             // Meta 4: respuesta visible garantizada en tres niveles: Snackbar
             // (evento único), banner con el resumen y errores por campo.
@@ -190,6 +274,7 @@ class CargaViewModel(
                 if (nombreErr != null) add("Nombre del archivo")
                 if (descErr != null) add("Descripción / Observaciones")
                 if (fotoErr != null) add("Fotografía del documento")
+                if (digitalErr != null) add("Archivo digital")
                 if (autErr != null) add("Declaración de autenticidad")
             }
             _uiState.update {
@@ -199,6 +284,7 @@ class CargaViewModel(
                     nombreArchivoError = nombreErr,
                     descripcionError = descErr,
                     fotoError = fotoErr,
+                    digitalError = digitalErr,
                     autenticidadError = autErr,
                     camposConError = campos,
                     generalError = "No se pudo registrar el documento: ${errores.size} campo(s) requieren corrección. " +
@@ -213,7 +299,12 @@ class CargaViewModel(
         _uiState.update { it.copy(isSubmitting = true, generalError = null) }
 
         viewModelScope.launch {
-            val tipoFormato = if (state.nombreArchivo.lowercase().endsWith(".pdf")) "PDF" else "JPG"
+            val tipoFormato = when (state.nombreArchivo.substringAfterLast('.', "").lowercase()) {
+                "pdf" -> "PDF"
+                "png" -> "PNG"
+                "jpg", "jpeg" -> "JPG"
+                else -> "Archivo"
+            }
             val estadoInicial = if (state.requiereValidacionUrgente) {
                 EstadoDocumento.PENDIENTE
             } else {
@@ -227,12 +318,13 @@ class CargaViewModel(
                 tipo = tipoFormato,
                 nombreArchivo = state.nombreArchivo.trim(),
                 estado = estadoInicial,
-                fechaCarga = "2026-10-08",
+                fechaCarga = LocalDate.now().toString(),
                 usuarioCarga = "M. Gonzalez (Admin)",
                 descripcion = state.descripcion.trim(),
                 // Semana 9.3 (RF-09/RF-11): la captura viaja con el documento
                 hashArchivo = state.fotoHash,
-                rutaLocal = state.fotoRuta
+                // RF-07: el archivo digital seleccionado también viaja asociado (URI persistido)
+                rutaLocal = state.fotoRuta ?: state.fileUri?.toString()
             )
 
             val guardado = repo.guardarDocumento(nuevoDoc)
@@ -248,6 +340,7 @@ class CargaViewModel(
                     nombreArchivoError = null,
                     descripcionError = null,
                     fotoError = null,
+                    digitalError = null,
                     autenticidadError = null,
                     generalError = null,
                     camposConError = emptyList()
