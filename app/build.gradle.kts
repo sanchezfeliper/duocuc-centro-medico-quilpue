@@ -1,6 +1,16 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    // KSP genera el codigo de Room (DAO y base de datos) en tiempo de compilacion.
+    alias(libs.plugins.ksp)
+    // Plugin de Room: fija la carpeta de esquemas versionados para exportSchema.
+    alias(libs.plugins.androidx.room)
+}
+
+room {
+    // Los esquemas exportados (app/schemas) son la referencia para validar las
+    // migraciones de la base local (RNF-14).
+    schemaDirectory("$projectDir/schemas")
 }
 
 android {
@@ -55,13 +65,21 @@ dependencies {
     implementation(libs.androidx.camera.view)
     // LocalLifecycleOwner para enlazar la camara al ciclo de vida (Compose 1.10)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    // Persistencia local con Room (RNF-14): reemplaza el SQLiteOpenHelper manual.
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
     // Meta 8: pruebas de ViewModels con corrutinas (Dispatchers.Main simulado)
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    // Pruebas de la capa Room sobre SQLite en memoria (JVM con Robolectric no incluido:
+    // las pruebas de DAO viven en androidTest).
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.room.testing)
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

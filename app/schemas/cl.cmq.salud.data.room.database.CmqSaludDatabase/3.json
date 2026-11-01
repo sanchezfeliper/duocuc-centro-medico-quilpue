@@ -1,0 +1,208 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 3,
+    "identityHash": "53f931b335d5af937df0916ca0aa821d",
+    "entities": [
+      {
+        "tableName": "funcionario",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`rut` TEXT NOT NULL, `nombreCompleto` TEXT NOT NULL, `cargo` TEXT NOT NULL, `centroSalud` TEXT NOT NULL, `profesion` TEXT, `tipoContrato` TEXT, `fechaIngreso` TEXT, `fechaNacimiento` TEXT, `situacionContractual` TEXT, `correo` TEXT, `perfilRol` TEXT, PRIMARY KEY(`rut`))",
+        "fields": [
+          {
+            "fieldPath": "rut",
+            "columnName": "rut",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombreCompleto",
+            "columnName": "nombreCompleto",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cargo",
+            "columnName": "cargo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "centroSalud",
+            "columnName": "centroSalud",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profesion",
+            "columnName": "profesion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tipoContrato",
+            "columnName": "tipoContrato",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fechaIngreso",
+            "columnName": "fechaIngreso",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fechaNacimiento",
+            "columnName": "fechaNacimiento",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "situacionContractual",
+            "columnName": "situacionContractual",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "correo",
+            "columnName": "correo",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "perfilRol",
+            "columnName": "perfilRol",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "rut"
+          ]
+        }
+      },
+      {
+        "tableName": "documento",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idDocumento` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `rutFuncionario` TEXT NOT NULL, `rutCargador` TEXT NOT NULL, `tipoDocumento` TEXT NOT NULL, `estado` TEXT NOT NULL, `fechaCarga` INTEGER NOT NULL, `fechaModificacion` INTEGER NOT NULL, `nombreArchivo` TEXT NOT NULL, `uriLocal` TEXT NOT NULL, `hash` TEXT, `descripcion` TEXT, `fechaVencimiento` INTEGER, `comentarioValidacion` TEXT, `urlSharePoint` TEXT, FOREIGN KEY(`rutFuncionario`) REFERENCES `funcionario`(`rut`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "idDocumento",
+            "columnName": "idDocumento",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rutFuncionario",
+            "columnName": "rutFuncionario",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rutCargador",
+            "columnName": "rutCargador",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipoDocumento",
+            "columnName": "tipoDocumento",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaCarga",
+            "columnName": "fechaCarga",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaModificacion",
+            "columnName": "fechaModificacion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombreArchivo",
+            "columnName": "nombreArchivo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "uriLocal",
+            "columnName": "uriLocal",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hash",
+            "columnName": "hash",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "descripcion",
+            "columnName": "descripcion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fechaVencimiento",
+            "columnName": "fechaVencimiento",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "comentarioValidacion",
+            "columnName": "comentarioValidacion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "urlSharePoint",
+            "columnName": "urlSharePoint",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "idDocumento"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_documento_rutFuncionario",
+            "unique": false,
+            "columnNames": [
+              "rutFuncionario"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_documento_rutFuncionario` ON `${TABLE_NAME}` (`rutFuncionario`)"
+          },
+          {
+            "name": "index_documento_rutCargador",
+            "unique": false,
+            "columnNames": [
+              "rutCargador"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_documento_rutCargador` ON `${TABLE_NAME}` (`rutCargador`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "funcionario",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "rutFuncionario"
+            ],
+            "referencedColumns": [
+              "rut"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '53f931b335d5af937df0916ca0aa821d')"
+    ]
+  }
+}

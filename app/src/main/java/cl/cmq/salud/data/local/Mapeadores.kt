@@ -65,6 +65,8 @@ fun Funcionario.toContentValues(conId: Boolean): ContentValues = ContentValues()
     put("fecha_ingreso", fechaIngreso)
     put("fecha_nacimiento", fechaNacimiento)
     put("situacion_contractual", situacionContractual)
+    put("correo", correo)
+    put("perfil_rol", perfilRol)
 }
 
 fun Cursor.toFuncionario(): Funcionario = Funcionario(
@@ -77,7 +79,9 @@ fun Cursor.toFuncionario(): Funcionario = Funcionario(
     tipoContrato = getString(getColumnIndexOrThrow("tipo_contrato")),
     fechaIngreso = getString(getColumnIndexOrThrow("fecha_ingreso")),
     fechaNacimiento = getString(getColumnIndexOrThrow("fecha_nacimiento")),
-    situacionContractual = getString(getColumnIndexOrThrow("situacion_contractual"))
+    situacionContractual = getString(getColumnIndexOrThrow("situacion_contractual")),
+    correo = getString(getColumnIndexOrThrow("correo")),
+    perfilRol = getString(getColumnIndexOrThrow("perfil_rol"))
 )
 
 /** Columnas usadas por las consultas de documentos (evita SELECT *). */
@@ -90,5 +94,5 @@ val COLUMNAS_DOCUMENTO = arrayOf(
 val COLUMNAS_FUNCIONARIO = arrayOf(
     "id_funcionario", "rut", "nombre_completo", "cargo", "centro_salud",
     "profesion", "tipo_contrato", "fecha_ingreso", "fecha_nacimiento",
-    "situacion_contractual"
+    "situacion_contractual", "correo", "perfil_rol"
 )

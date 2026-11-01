@@ -25,6 +25,10 @@ class DocumentRepository(
     suspend fun buscarPorRut(rut: String): List<Documento> =
         local.buscarDocumentosPorRut(rut.trim())
 
+    /** Documentos incorporados por el propio usuario autenticado (RF-31). */
+    suspend fun buscarPorCargador(rut: String): List<Documento> =
+        local.buscarDocumentosPorCargador(rut.trim())
+
     /** Consulta un documento por su ID (Meta 6 - destino Detalle P04). */
     suspend fun buscarPorId(idDocumento: Int): Documento? = local.buscarDocumentoPorId(idDocumento)
 
