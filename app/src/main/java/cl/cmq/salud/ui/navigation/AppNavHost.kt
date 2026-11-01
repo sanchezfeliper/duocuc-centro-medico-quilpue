@@ -32,6 +32,7 @@ import cl.cmq.salud.ui.screens.consulta.ConsultaExpedienteScreen
 import cl.cmq.salud.ui.screens.detalle.DetalleDocumentoScreen
 import cl.cmq.salud.ui.screens.home.HomeScreen
 import cl.cmq.salud.ui.screens.login.LoginScreen
+import cl.cmq.salud.ui.screens.perfil.PerfilScreen
 import cl.cmq.salud.ui.screens.validacion.ValidacionScreen
 import cl.cmq.salud.ui.theme.Grey
 import cl.cmq.salud.ui.theme.Navy
@@ -102,11 +103,12 @@ fun AppNavHost() {
         }
 
         composable(AppDestinos.Perfil.route) {
-            // Punto 6 pendiente: aqui va la pantalla de Perfil. La ruta ya existe
-            // y queda protegida por la guardia de sesion, de modo que el punto 4
-            // no depende de que la pantalla este lista.
-            SesionRequerida(sesion) { sesionActiva ->
-                PerfilPlaceholder(sesion = sesionActiva, onVolver = { navController.popBackStack() })
+            SesionRequerida(sesion) {
+                PerfilScreen(
+                    onVolver = { navController.popBackStack() },
+                    // "Ver mis documentos" lleva al historial (Expediente).
+                    onVerMisDocumentos = { navigateToMainDestination(1) }
+                )
             }
         }
 
@@ -118,7 +120,9 @@ fun AppNavHost() {
                 onNavigateBitacora = {
                     Toast.makeText(context, "Próximamente: Bitácora de auditoría (P08)", Toast.LENGTH_SHORT).show()
                 },
+                onNavigatePerfil = { navController.navigate(AppDestinos.Perfil.route) },
                 onCerrarSesion = {
+                    AppContainer.cerrarSesion()
                     navController.navigate(AppDestinos.Login.route) {
                         popUpTo(0) { inclusive = true }
                     }
@@ -213,6 +217,9 @@ fun AppNavHost() {
 
 /** Vuelve al login limpiando toda la pila (usado por la guardia de sesion). */
 private fun irALogin(navController: NavHostController) {
+    // Idempotente: si ya estamos en el login (arranque o cierre reiterado),
+    // no se vuelve a navegar para no apilar destinos repetidos.
+    if (navController.currentDestination?.route == AppDestinos.Login.route) return
     navController.navigate(AppDestinos.Login.route) {
         popUpTo(0) { inclusive = true }
     }
@@ -260,44 +267,6 @@ private fun AccesoDenegado(onVolver: () -> Unit) {
             TextButton(onClick = onVolver) {
                 Text("Volver")
             }
-        }
-    }
-}
-
-/**
- * Marcador de la pantalla de Perfil (punto 6 del plan, aun no implementada).
- *
- * La ruta y su proteccion existen desde el punto 4; aqui solo se confirma que
- * la sesion llega correctamente. Se reemplaza por la pantalla real en el punto 6.
- */
-@Composable
-private fun PerfilPlaceholder(sesion: SesionActual, onVolver: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Text(
-            "Perfil",
-            style = MaterialTheme.typography.headlineLarge,
-            color = Spruce
-        )
-        Text(
-            "Sesión: ${sesion.nombreCompleto}",
-            style = MaterialTheme.typography.bodyLarge,
-            color = Navy
-        )
-        Text(
-            "Perfil: ${sesion.perfil.nombre} · RUT ${sesion.rut}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Grey
-        )
-        Text(
-            "Pantalla completa disponible en el punto 6 del plan.",
-            style = MaterialTheme.typography.bodySmall,
-            color = Grey
-        )
-        TextButton(onClick = onVolver) {
-            Text("Volver")
         }
     }
 }

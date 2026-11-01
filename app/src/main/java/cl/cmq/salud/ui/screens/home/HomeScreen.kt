@@ -66,6 +66,7 @@ fun HomeScreen(
     onNavigateCarga: () -> Unit,
     onNavigateRevision: () -> Unit,
     onNavigateBitacora: () -> Unit,
+    onNavigatePerfil: () -> Unit = {},
     onCerrarSesion: () -> Unit
 ) {
     val state by vm.uiState.collectAsState()
@@ -93,13 +94,18 @@ fun HomeScreen(
                         }
                         Column {
                             Text("CMQ Salud", color = Spruce, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                            Text("Gestión documental", color = Grey, fontSize = 12.sp)
+                            Text(state.perfilNombre, color = Grey, fontSize = 12.sp)
                         }
                     }
                 },
                 trailingContent = {
-                    TextButton(onClick = { vm.cerrarSesion() }) {
-                        Text("Salir", color = Teal, fontWeight = FontWeight.SemiBold)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = onNavigatePerfil) {
+                            Text("Mi perfil", color = Teal, fontWeight = FontWeight.SemiBold)
+                        }
+                        TextButton(onClick = { vm.cerrarSesion() }) {
+                            Text("Salir", color = Teal, fontWeight = FontWeight.SemiBold)
+                        }
                     }
                 }
             )
@@ -111,7 +117,7 @@ fun HomeScreen(
                     when (index) {
                         1 -> onNavigateExpediente()
                         2 -> onNavigateCarga()
-                        3 -> onNavigateRevision()
+                        3 -> if (state.puedeRevisar) onNavigateRevision()
                     }
                 }
             )
@@ -131,12 +137,25 @@ fun HomeScreen(
                 centroSalud = state.centroSalud
             )
 
-            PriorityTaskCard(
-                pendientes = state.validacionesPendientes,
-                onClick = onNavigateRevision
-            )
+            // Administración ve la bandeja de revisión (RF-15); el funcionario
+            // ve el estado de su propio expediente (mínimo privilegio).
+            if (state.puedeRevisar) {
+                PriorityTaskCard(
+                    pendientes = state.validacionesPendientes,
+                    onClick = onNavigateRevision
+                )
+            } else {
+                MiExpedienteCard(
+                    total = state.misDocumentos,
+                    porCorregir = state.documentosPorVencer,
+                    onClick = onNavigateExpediente
+                )
+            }
 
-            SectionHeading(title = "Accesos rápidos", detail = "Tareas del centro")
+            SectionHeading(
+                title = "Accesos rápidos",
+                detail = if (state.puedeRevisar) "Tareas del centro" else "Tus gestiones"
+            )
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -144,24 +163,88 @@ fun HomeScreen(
                 border = androidx.compose.foundation.BorderStroke(1.dp, cl.cmq.salud.ui.theme.Divider)
             ) {
                 Column {
-                    HomeActionRow(Icons.Default.Search, "Consultar expediente", "Busca por RUT de funcionario", onNavigateExpediente)
+                    HomeActionRow(
+                        Icons.Default.Search,
+                        "Consultar expediente",
+                        if (state.puedeBuscarOtrosRuts) "Busca por RUT de funcionario" else "Revisa tus documentos cargados",
+                        onNavigateExpediente
+                    )
                     HorizontalDivider(color = cl.cmq.salud.ui.theme.Divider.copy(alpha = 0.7f), modifier = Modifier.padding(start = 58.dp))
                     HomeActionRow(Icons.Default.Add, "Cargar documento", "Registra un archivo o captura", onNavigateCarga)
-                    HorizontalDivider(color = cl.cmq.salud.ui.theme.Divider.copy(alpha = 0.7f), modifier = Modifier.padding(start = 58.dp))
-                    HomeActionRow(Icons.Default.Menu, "Bitácora de auditoría", "Consulta los accesos registrados", onNavigateBitacora)
+                    // La bitácora de auditoría (RF-19) es de perfiles SYS/TIC,
+                    // fuera del MVP: el funcionario no la ve.
+                    if (state.puedeRevisar) {
+                        HorizontalDivider(color = cl.cmq.salud.ui.theme.Divider.copy(alpha = 0.7f), modifier = Modifier.padding(start = 58.dp))
+                        HomeActionRow(Icons.Default.Menu, "Bitácora de auditoría", "Consulta los accesos registrados", onNavigateBitacora)
+                    }
                 }
             }
 
             if (state.documentosPorVencer > 0) {
-                val vencimiento = if (state.documentosPorVencer == 1) {
-                    "1 documento está próximo a vencer. Revisa su expediente."
+                val vencimiento = if (state.puedeRevisar) {
+                    if (state.documentosPorVencer == 1) {
+                        "1 documento está próximo a vencer. Revisa su expediente."
+                    } else {
+                        "${state.documentosPorVencer} documentos están próximos a vencer. Revisa sus expedientes."
+                    }
                 } else {
-                    "${state.documentosPorVencer} documentos están próximos a vencer. Revisa sus expedientes."
+                    if (state.documentosPorVencer == 1) {
+                        "Tienes 1 documento en revisión o con corrección solicitada."
+                    } else {
+                        "Tienes ${state.documentosPorVencer} documentos en revisión o con corrección solicitada."
+                    }
                 }
                 AlertCard(text = vencimiento)
             }
 
             LocalStorageCard(total = state.documentosEnAlmacenamiento)
+        }
+    }
+}
+
+/**
+ * Tarjeta prioritaria del funcionario: su expediente, no la bandeja ajena.
+ * Informa cuántos documentos tiene y cuántos requieren su atención.
+ */
+@Composable
+private fun MiExpedienteCard(total: Int, porCorregir: Int, onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Spruce),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 17.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "Mi expediente",
+                    color = Color.White,
+                    style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    when {
+                        total == 0 -> "Aún no tienes documentos cargados"
+                        porCorregir > 0 -> "$total documento(s) · $porCorregir requieren tu atención"
+                        else -> "$total documento(s) en tu expediente"
+                    },
+                    color = Color.White.copy(alpha = 0.84f),
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Ver mis documentos", color = Color.White, style = androidx.compose.material3.MaterialTheme.typography.labelLarge)
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                }
+            }
+            Icon(Icons.AutoMirrored.Filled.Assignment, contentDescription = null, tint = Accent, modifier = Modifier.size(28.dp))
         }
     }
 }
