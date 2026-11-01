@@ -13,13 +13,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -51,12 +54,43 @@ import cl.cmq.salud.ui.theme.SurfaceWhite
 fun DetalleDocumentoScreen(
     idDocumento: Int,
     onVolver: () -> Unit,
+    onEditar: (Int) -> Unit = {},
+    onEliminado: () -> Unit = onVolver,
     vm: DetalleViewModel = viewModel(
         key = "detalle_$idDocumento",
         factory = DetalleViewModel.factory(idDocumento)
     )
 ) {
     val state by vm.uiState.collectAsState()
+
+    // Semana 10: al confirmarse el borrado, la pantalla vuelve al expediente.
+    LaunchedEffect(state.documentoEliminado) {
+        if (state.documentoEliminado) onEliminado()
+    }
+
+    if (state.showConfirmarEliminar) {
+        AlertDialog(
+            onDismissRequest = { vm.cancelarEliminar() },
+            title = { Text("Eliminar documento") },
+            text = {
+                Text(
+                    "¿Confirma eliminar el documento #$idDocumento " +
+                        "(${state.documento?.nombreArchivo ?: ""})? " +
+                        "Esta acción borra el registro del almacenamiento local y no se puede deshacer."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { vm.eliminarDocumento() }) {
+                    Text("Eliminar", color = Red, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { vm.cancelarEliminar() }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
 
     Scaffold(
         containerColor = Background,
@@ -195,6 +229,35 @@ fun DetalleDocumentoScreen(
                         text = if (state.accesoRegistrado) "Registrar otro acceso" else "Registrar acceso de descarga",
                         onClick = { vm.registrarAccesoDescarga() }
                     )
+
+                    // Semana 10: acciones de gestión del registro (editar / eliminar).
+                    Spacer(Modifier.height(9.dp))
+                    SecondaryButton(
+                        text = "Editar información",
+                        onClick = { onEditar(idDocumento) }
+                    )
+                    Spacer(Modifier.height(9.dp))
+                    TextButton(
+                        onClick = { vm.abrirConfirmacionEliminar() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            "Eliminar documento",
+                            color = Red,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    state.errorEliminar?.let { mensaje ->
+                        Text(
+                            mensaje,
+                            color = Red,
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+
                     Spacer(Modifier.height(9.dp))
                     SecondaryButton(text = "Volver al expediente", onClick = onVolver)
                     Spacer(Modifier.height(12.dp))

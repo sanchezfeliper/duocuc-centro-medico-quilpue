@@ -51,6 +51,36 @@ class DetalleViewModel(
         _uiState.update { it.copy(accesoRegistrado = true) }
     }
 
+    // ------------------------------------------------------------------
+    // Semana 10: eliminar el documento (operación D del CRUD).
+    // Flujo de dos pasos: abrir el diálogo de confirmación y, solo si el usuario
+    // confirma, borrar en el almacenamiento local y marcar el estado de éxito.
+    // ------------------------------------------------------------------
+
+    fun abrirConfirmacionEliminar() {
+        _uiState.update { it.copy(showConfirmarEliminar = true, errorEliminar = null) }
+    }
+
+    fun cancelarEliminar() {
+        _uiState.update { it.copy(showConfirmarEliminar = false, errorEliminar = null) }
+    }
+
+    fun eliminarDocumento() {
+        _uiState.update { it.copy(showConfirmarEliminar = false) }
+        viewModelScope.launch {
+            val borrado = repo.eliminarDocumento(idDocumento)
+            if (borrado) {
+                _uiState.update { it.copy(documentoEliminado = true) }
+            } else {
+                _uiState.update {
+                    it.copy(
+                        errorEliminar = "No se pudo eliminar el documento #$idDocumento: ya no existe en el almacenamiento local."
+                    )
+                }
+            }
+        }
+    }
+
     /** Factory para crear el ViewModel con el argumento de navegacion (sin Hilt aun). */
     companion object {
         fun factory(idDocumento: Int, repo: DocumentRepository = AppContainer.documentRepository): ViewModelProvider.Factory =

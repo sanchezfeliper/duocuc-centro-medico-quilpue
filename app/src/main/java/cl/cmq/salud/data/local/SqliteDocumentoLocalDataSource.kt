@@ -77,6 +77,16 @@ class SqliteDocumentoLocalDataSource(
             if (filas > 0) documento else null
         }
 
+    override suspend fun eliminarDocumento(idDocumento: Int): Boolean =
+        withContext(Dispatchers.IO) {
+            val filas = helper.writableDatabase.delete(
+                TABLA_DOCUMENTOS,
+                "id_documento = ?",
+                arrayOf(idDocumento.toString())
+            )
+            filas > 0
+        }
+
     override suspend fun contarDocumentos(): Int = withContext(Dispatchers.IO) {
         helper.readableDatabase
             .rawQuery("SELECT COUNT(*) FROM $TABLA_DOCUMENTOS", null)

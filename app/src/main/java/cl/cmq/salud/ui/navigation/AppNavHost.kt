@@ -4,10 +4,12 @@ package cl.cmq.salud.ui.navigation
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import cl.cmq.salud.ui.screens.carga.CargaDocumentoScreen
+import cl.cmq.salud.ui.screens.carga.CargaViewModel
 import cl.cmq.salud.ui.screens.consulta.ConsultaExpedienteScreen
 import cl.cmq.salud.ui.screens.detalle.DetalleDocumentoScreen
 import cl.cmq.salud.ui.screens.home.HomeScreen
@@ -92,7 +94,37 @@ fun AppNavHost() {
                 ?.toIntOrNull() ?: 0
             DetalleDocumentoScreen(
                 idDocumento = idDocumento,
-                onVolver = { navController.popBackStack() }
+                onVolver = { navController.popBackStack() },
+                // Semana 10: Editar abre el formulario en modo edicion con el ID.
+                onEditar = { id -> navController.navigate(AppDestinos.EditarCarga.crearRuta(id)) },
+                // Tras eliminar, el detalle deja de tener sentido: vuelve al expediente.
+                onEliminado = {
+                    navController.navigate(AppDestinos.Expediente.route) {
+                        popUpTo(AppDestinos.Detalle.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // Semana 10: formulario de carga reutilizado en modo edicion.
+        composable(AppDestinos.EditarCarga.route) { backStackEntry ->
+            val idDocumento = backStackEntry.arguments
+                ?.getString(AppDestinos.EditarCarga.ARG_ID)
+                ?.toIntOrNull() ?: 0
+            CargaDocumentoScreen(
+                onVolver = { navController.popBackStack() },
+                onMainDestinationSelected = ::navigateToMainDestination,
+                vm = viewModel(
+                    key = "carga_editar_$idDocumento",
+                    factory = CargaViewModel.factory(idDocumento)
+                ),
+                onCargaExitosa = { id ->
+                    Toast.makeText(context, "Documento #$id actualizado exitosamente", Toast.LENGTH_SHORT).show()
+                    // Vuelve al expediente para ver el registro ya actualizado.
+                    navController.navigate(AppDestinos.Expediente.route) {
+                        popUpTo(AppDestinos.Detalle.route) { inclusive = true }
+                    }
+                }
             )
         }
 

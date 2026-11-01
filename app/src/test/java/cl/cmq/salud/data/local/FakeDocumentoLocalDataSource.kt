@@ -49,6 +49,9 @@ class FakeDocumentoLocalDataSource : DocumentoLocalDataSource {
         return documento
     }
 
+    override suspend fun eliminarDocumento(idDocumento: Int): Boolean =
+        documentos.removeAll { it.idDocumento == idDocumento }
+
     override suspend fun contarDocumentos(): Int = documentos.size
 
     override suspend fun listarPendientes(): List<Documento> =

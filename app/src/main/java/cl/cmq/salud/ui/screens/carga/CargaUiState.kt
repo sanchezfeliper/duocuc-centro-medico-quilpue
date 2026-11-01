@@ -63,6 +63,11 @@ data class CargaUiState(
     // Estado de envío / procesamiento
     val isSubmitting: Boolean = false,
 
+    // Semana 10: modo edición. Si idDocumentoEnEdicion != null, el formulario
+    // actualiza un registro existente en vez de crear uno nuevo.
+    val idDocumentoEnEdicion: Int? = null,
+    val isEditando: Boolean = false,
+
     // Retroalimentación / Respuesta
     val documentoCreado: Documento? = null,
     val showSuccessDialog: Boolean = false

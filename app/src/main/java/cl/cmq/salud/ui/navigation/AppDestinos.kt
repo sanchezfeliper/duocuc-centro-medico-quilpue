@@ -17,4 +17,13 @@ sealed class AppDestinos(val route: String) {
         fun crearRuta(idDocumento: Int): String = "detalle/$idDocumento"
         const val ARG_ID = "idDocumento"
     }
+
+    /**
+     * Semana 10: edición de un documento existente. Reutiliza el formulario de
+     * carga en modo edición, recibiendo el ID del registro por la ruta.
+     */
+    object EditarCarga : AppDestinos("carga/editar/{idDocumento}") {
+        fun crearRuta(idDocumento: Int): String = "carga/editar/$idDocumento"
+        const val ARG_ID = "idDocumento"
+    }
 }
