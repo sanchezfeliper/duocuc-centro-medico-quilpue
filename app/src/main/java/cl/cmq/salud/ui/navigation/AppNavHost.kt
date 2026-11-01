@@ -2,19 +2,41 @@
 package cl.cmq.salud.ui.navigation
 
 import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import cl.cmq.salud.di.AppContainer
+import cl.cmq.salud.domain.permissions.PermisosPorPerfil
+import cl.cmq.salud.domain.session.SesionActual
 import cl.cmq.salud.ui.screens.carga.CargaDocumentoScreen
 import cl.cmq.salud.ui.screens.carga.CargaViewModel
 import cl.cmq.salud.ui.screens.consulta.ConsultaExpedienteScreen
 import cl.cmq.salud.ui.screens.detalle.DetalleDocumentoScreen
 import cl.cmq.salud.ui.screens.home.HomeScreen
 import cl.cmq.salud.ui.screens.login.LoginScreen
+import cl.cmq.salud.ui.screens.perfil.PerfilScreen
 import cl.cmq.salud.ui.screens.validacion.ValidacionScreen
+import cl.cmq.salud.ui.theme.Grey
+import cl.cmq.salud.ui.theme.Navy
+import cl.cmq.salud.ui.theme.Spruce
 
 /**
  * Grafo de navegacion de la app (Meta 5).
@@ -23,11 +45,25 @@ import cl.cmq.salud.ui.screens.validacion.ValidacionScreen
  * exponen eventos (lambdas) y este grafo decide a donde navegar. Los
  * Toast son feedback temporal para destinos aun no implementados
  * (P08 Bitacora); al existir, cada uno tendra su ruta propia.
+ *
+ * Separacion de perfiles: el grafo observa la sesion de [AppContainer] y
+ * protege los destinos. Sin sesion no se entra a ninguna pantalla interna, y
+ * los destinos reservados (revision) exigen ademas el permiso del perfil. Es
+ * defensa en profundidad: ocultar un boton no basta, la ruta se valida aqui.
  */
 @Composable
 fun AppNavHost() {
     val navController = rememberNavController()
     val context = LocalContext.current
+    val sesion by AppContainer.sesionActual.collectAsState()
+
+    // Guardia de sesion: si la sesion se cierra (o nunca se abrio) estando en
+    // una pantalla interna, se vuelve al login limpiando la pila.
+    LaunchedEffect(sesion) {
+        if (sesion == null) {
+            irALogin(navController)
+        }
+    }
 
     fun navigateToMainDestination(index: Int) {
         val route = when (index) {
@@ -36,6 +72,13 @@ fun AppNavHost() {
             2 -> AppDestinos.Carga.route
             3 -> AppDestinos.Revision.route
             else -> return
+        }
+        val perfilActivo = sesion?.perfil
+        if (route == AppDestinos.Revision.route &&
+            (perfilActivo == null || !PermisosPorPerfil.veRevision(perfilActivo))
+        ) {
+            Toast.makeText(context, "Tu perfil no tiene acceso a la bandeja de revisión.", Toast.LENGTH_SHORT).show()
+            return
         }
         navController.navigate(route) {
             popUpTo(AppDestinos.Home.route) { saveState = true }
@@ -59,6 +102,16 @@ fun AppNavHost() {
             )
         }
 
+        composable(AppDestinos.Perfil.route) {
+            SesionRequerida(sesion) {
+                PerfilScreen(
+                    onVolver = { navController.popBackStack() },
+                    // "Ver mis documentos" lleva al historial (Expediente).
+                    onVerMisDocumentos = { navigateToMainDestination(1) }
+                )
+            }
+        }
+
         composable(AppDestinos.Home.route) {
             HomeScreen(
                 onNavigateExpediente = { navigateToMainDestination(1) },
@@ -67,7 +120,9 @@ fun AppNavHost() {
                 onNavigateBitacora = {
                     Toast.makeText(context, "Próximamente: Bitácora de auditoría (P08)", Toast.LENGTH_SHORT).show()
                 },
+                onNavigatePerfil = { navController.navigate(AppDestinos.Perfil.route) },
                 onCerrarSesion = {
+                    AppContainer.cerrarSesion()
                     navController.navigate(AppDestinos.Login.route) {
                         popUpTo(0) { inclusive = true }
                     }
@@ -129,12 +184,19 @@ fun AppNavHost() {
         }
 
         // P06 Validacion (RF-15 a RF-17): bandeja de jefatura conectada al
-        // mismo repositorio compartido por Carga y Consulta.
+        // mismo repositorio compartido por Carga y Consulta. Reservada a los
+        // perfiles con permiso de revisión (RF-07 / minimo privilegio).
         composable(AppDestinos.Revision.route) {
-            ValidacionScreen(
-                onVolver = { navController.popBackStack() },
-                onMainDestinationSelected = ::navigateToMainDestination
-            )
+            SesionRequerida(sesion) { sesionActiva ->
+                if (PermisosPorPerfil.veRevision(sesionActiva.perfil)) {
+                    ValidacionScreen(
+                        onVolver = { navController.popBackStack() },
+                        onMainDestinationSelected = ::navigateToMainDestination
+                    )
+                } else {
+                    AccesoDenegado(onVolver = { navController.popBackStack() })
+                }
+            }
         }
 
         composable(AppDestinos.Carga.route) {
@@ -149,6 +211,62 @@ fun AppNavHost() {
                     }
                 }
             )
+        }
+    }
+}
+
+/** Vuelve al login limpiando toda la pila (usado por la guardia de sesion). */
+private fun irALogin(navController: NavHostController) {
+    // Idempotente: si ya estamos en el login (arranque o cierre reiterado),
+    // no se vuelve a navegar para no apilar destinos repetidos.
+    if (navController.currentDestination?.route == AppDestinos.Login.route) return
+    navController.navigate(AppDestinos.Login.route) {
+        popUpTo(0) { inclusive = true }
+    }
+}
+
+/**
+ * Envoltorio de destino que exige sesion activa.
+ *
+ * Recibe la sesion ya observada por el grafo: si es null, el destino interno
+ * no se pinta (la guardia de arriba, ademas, redirige al login).
+ */
+@Composable
+private fun SesionRequerida(
+    sesion: SesionActual?,
+    contenido: @Composable (SesionActual) -> Unit
+) {
+    if (sesion != null) {
+        contenido(sesion)
+    } else {
+        AccesoDenegado(onVolver = {})
+    }
+}
+
+/** Aviso para un destino alcanzado sin el permiso del perfil. */
+@Composable
+private fun AccesoDenegado(onVolver: () -> Unit) {
+    Box(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                "Acceso no autorizado",
+                style = MaterialTheme.typography.titleLarge,
+                color = Spruce
+            )
+            Text(
+                "Tu perfil no tiene permiso para ver esta sección.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Grey
+            )
+            TextButton(onClick = onVolver) {
+                Text("Volver")
+            }
         }
     }
 }

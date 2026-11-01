@@ -8,6 +8,8 @@ import cl.cmq.salud.data.DocumentRepository
 import cl.cmq.salud.di.AppContainer
 import cl.cmq.salud.domain.model.Documento
 import cl.cmq.salud.domain.model.EstadoDocumento
+import cl.cmq.salud.domain.permissions.PermisosPorPerfil
+import cl.cmq.salud.domain.session.SesionActual
 import cl.cmq.salud.domain.validation.ValidadorRut
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,11 +22,25 @@ class CargaViewModel(
     private val repo: DocumentRepository = AppContainer.documentRepository,
     // Semana 10: si viene un ID, el formulario opera en modo edición sobre ese
     // documento existente; si es null, crea uno nuevo (comportamiento original).
-    private val idDocumentoEdicion: Int? = null
+    private val idDocumentoEdicion: Int? = null,
+    // Separación de perfiles: la sesión decide si el RUT es editable. El
+    // funcionario carga siempre para sí mismo (RF-08: el formulario fija su RUT);
+    // administración puede asociar el documento a cualquier funcionario.
+    private val sesion: SesionActual? = AppContainer.sesionActual.value
 ) : ViewModel() {
 
+    private val rutFijo: Boolean = sesion
+        ?.let { !PermisosPorPerfil.puedeCargarParaOtroRut(it.perfil) && it.rut.isNotBlank() }
+        ?: false
+
     private val _uiState = MutableStateFlow(
-        CargaUiState(idDocumentoEnEdicion = idDocumentoEdicion, isEditando = idDocumentoEdicion != null)
+        CargaUiState(
+            idDocumentoEnEdicion = idDocumentoEdicion,
+            isEditando = idDocumentoEdicion != null,
+            // El funcionario parte con su RUT ya puesto y bloqueado.
+            rutFijo = rutFijo,
+            rut = if (rutFijo) sesion?.rut.orEmpty() else ""
+        )
     )
     val uiState: StateFlow<CargaUiState> = _uiState.asStateFlow()
 
@@ -70,6 +86,9 @@ class CargaViewModel(
     // ------------------------------------------------------------------
 
     fun onRutChange(value: String) {
+        // Con RUT fijo el campo es de solo lectura: se ignora cualquier intento
+        // de cambio (la UI lo bloquea y el VM lo rechaza igualmente).
+        if (_uiState.value.rutFijo) return
         val error = if (value.isBlank()) null else validarRut(value)
         _uiState.update { it.copy(rut = value, rutError = error, generalError = null) }
     }
@@ -238,7 +257,10 @@ class CargaViewModel(
     }
 
     fun limpiarFormulario() {
-        _uiState.value = CargaUiState()
+        _uiState.value = CargaUiState(
+            rutFijo = rutFijo,
+            rut = if (rutFijo) sesion?.rut.orEmpty() else ""
+        )
     }
 
     /**
@@ -302,7 +324,11 @@ class CargaViewModel(
      */
     fun cargarOtro() {
         val folio = _uiState.value.documentoCreado?.idDocumento
-        _uiState.value = CargaUiState()
+        // Preserva el RUT cuando es fijo (el funcionario sigue cargando para sí).
+        _uiState.value = CargaUiState(
+            rutFijo = rutFijo,
+            rut = if (rutFijo) sesion?.rut.orEmpty() else ""
+        )
         _uiState.update {
             it.copy(successEventId = it.successEventId + 1, ultimoFolioRegistrado = folio)
         }
@@ -397,7 +423,8 @@ class CargaViewModel(
                 nombreArchivo = state.nombreArchivo.trim(),
                 estado = estadoInicial,
                 fechaCarga = LocalDate.now().toString(),
-                usuarioCarga = "M. Gonzalez (Admin)",
+                // El responsable de la carga sale de la sesión (RN-08), no de un literal.
+                usuarioCarga = sesion?.let { "${it.nombreCompleto} (${it.perfil.nombre})" } ?: "Sistema",
                 descripcion = state.descripcion.trim(),
                 // Semana 9.3 (RF-09/RF-11): la captura viaja con el documento
                 hashArchivo = state.fotoHash,

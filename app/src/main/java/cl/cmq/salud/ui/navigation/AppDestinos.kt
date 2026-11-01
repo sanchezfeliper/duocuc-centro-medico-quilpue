@@ -9,6 +9,10 @@ package cl.cmq.salud.ui.navigation
 sealed class AppDestinos(val route: String) {
     object Login : AppDestinos("login")
     object Home : AppDestinos("home")
+
+    /** P05 Perfil: datos de la persona logueada (distinta del historial de documentos). */
+    object Perfil : AppDestinos("perfil")
+
     object Expediente : AppDestinos("expediente")
     object Carga : AppDestinos("carga")
     object Revision : AppDestinos("revision")

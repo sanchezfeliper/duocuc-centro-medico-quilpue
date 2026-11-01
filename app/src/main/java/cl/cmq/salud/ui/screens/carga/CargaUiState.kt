@@ -11,6 +11,10 @@ enum class OrigenDocumento(val label: String) {
 data class CargaUiState(
     // Campos de entrada
     val rut: String = "",
+    // Separación de perfiles: el funcionario carga SIEMPRE para su propio RUT
+    // (el campo se muestra fijo, no editable); administración puede escribir
+    // el RUT del funcionario al que asocia el documento (RF-08/RF-09).
+    val rutFijo: Boolean = false,
     val tipoSeleccionado: String = "Contrato de trabajo",
     val nombreArchivo: String = "",
     val descripcion: String = "",

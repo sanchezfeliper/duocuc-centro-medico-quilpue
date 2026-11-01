@@ -210,13 +210,20 @@ fun CargaDocumentoScreen(
                 label = { Text("RUT Funcionario *") },
                 placeholder = { Text("Ej: 18.765.432-7") },
                 singleLine = true,
+                // Separación de perfiles: el funcionario ve su RUT fijo (no editable);
+                // administración escribe el RUT del funcionario a asociar.
+                readOnly = state.rutFijo,
                 isError = state.rutError != null,
                 supportingText = {
                     if (state.rutError != null) {
                         Text(state.rutError ?: "", color = Red, fontSize = 12.sp)
                     } else {
                         Text(
-                            "Formato 12.345.678-9; se verifica el dígito verificador",
+                            if (state.rutFijo) {
+                                "Documento asociado a tu propio RUT (no editable)"
+                            } else {
+                                "Formato 12.345.678-9; se verifica el dígito verificador"
+                            },
                             color = Grey,
                             fontSize = 12.sp
                         )
