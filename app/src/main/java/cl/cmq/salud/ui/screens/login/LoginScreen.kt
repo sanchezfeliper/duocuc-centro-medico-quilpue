@@ -1,6 +1,12 @@
 package cl.cmq.salud.ui.screens.login
 
 import androidx.compose.foundation.background
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -155,13 +161,22 @@ fun LoginScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    state.errorMessage?.let { message ->
-                        Spacer(Modifier.height(10.dp))
+                    // Animacion de feedback: el mensaje de error aparece y
+                    // desaparece con un desvanecimiento y un leve crecimiento
+                    // vertical, en vez de saltar de golpe al cambiar el estado.
+                    AnimatedVisibility(
+                        visible = state.errorMessage != null,
+                        enter = fadeIn(animationSpec = tween(180)) +
+                            expandVertically(animationSpec = tween(180)),
+                        exit = fadeOut(animationSpec = tween(140)) +
+                            shrinkVertically(animationSpec = tween(140))
+                    ) {
                         Text(
-                            message,
+                            state.errorMessage.orEmpty(),
                             color = Red,
                             fontSize = 12.sp,
-                            lineHeight = 17.sp
+                            lineHeight = 17.sp,
+                            modifier = Modifier.padding(top = 10.dp)
                         )
                     }
 

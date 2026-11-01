@@ -2,6 +2,11 @@
 package cl.cmq.salud.ui.navigation
 
 import android.widget.Toast
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -89,7 +94,35 @@ fun AppNavHost() {
 
     NavHost(
         navController = navController,
-        startDestination = AppDestinos.Login.route
+        startDestination = AppDestinos.Login.route,
+        // Animaciones de transicion entre destinos (Compose Navigation).
+        // Enter: la pantalla nueva se desliza desde la derecha al avanzar y
+        // desde la izquierda al volver; las salidas se desvanecen. Da
+        // continuidad visual y hace evidente el sentido de la navegacion.
+        enterTransition = {
+            slideInHorizontally(
+                initialOffsetX = { ancho -> ancho / 6 },
+                animationSpec = tween(DURACION_TRANSICION_MS)
+            ) + fadeIn(animationSpec = tween(DURACION_TRANSICION_MS))
+        },
+        exitTransition = {
+            slideOutHorizontally(
+                targetOffsetX = { ancho -> -ancho / 6 },
+                animationSpec = tween(DURACION_TRANSICION_MS)
+            ) + fadeOut(animationSpec = tween(DURACION_TRANSICION_MS))
+        },
+        popEnterTransition = {
+            slideInHorizontally(
+                initialOffsetX = { ancho -> -ancho / 6 },
+                animationSpec = tween(DURACION_TRANSICION_MS)
+            ) + fadeIn(animationSpec = tween(DURACION_TRANSICION_MS))
+        },
+        popExitTransition = {
+            slideOutHorizontally(
+                targetOffsetX = { ancho -> ancho / 6 },
+                animationSpec = tween(DURACION_TRANSICION_MS)
+            ) + fadeOut(animationSpec = tween(DURACION_TRANSICION_MS))
+        }
     ) {
         composable(AppDestinos.Login.route) {
             LoginScreen(
@@ -214,6 +247,9 @@ fun AppNavHost() {
         }
     }
 }
+
+/** Duracion unica de las transiciones de navegacion (ms), en un solo lugar. */
+private const val DURACION_TRANSICION_MS = 280
 
 /** Vuelve al login limpiando toda la pila (usado por la guardia de sesion). */
 private fun irALogin(navController: NavHostController) {
