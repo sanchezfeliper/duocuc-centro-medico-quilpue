@@ -6,6 +6,11 @@ import cl.cmq.salud.domain.model.Documento
 
 data class ConsultaUiState(
     val rut: String = "",
+    // Separacion de perfiles (RF-12/RF-13): el funcionario solo consulta el
+    // expediente propio, por lo que su RUT viene fijo desde la sesion y el
+    // campo de busqueda es de solo lectura. Administracion sigue consultando
+    // el de cualquier funcionario.
+    val rutFijo: Boolean = false,
     val filtroActivo: FiltroDocumento = FiltroDocumento.TODOS,
     val funcionario: FuncionarioResumen? = null,
     val documentos: List<Documento> = emptyList(),

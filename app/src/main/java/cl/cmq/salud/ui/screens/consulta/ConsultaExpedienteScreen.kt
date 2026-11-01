@@ -79,11 +79,19 @@ fun ConsultaExpedienteScreen(
                 .padding(horizontal = 20.dp, vertical = 10.dp)
         ) {
             Text(
-                "Buscar expediente",
+                if (state.rutFijo) "Mi expediente" else "Buscar expediente",
                 style = MaterialTheme.typography.displaySmall,
                 color = Spruce,
             )
-            Text("Busca por RUT y accede al expediente local.", color = Grey, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                if (state.rutFijo) {
+                    "Estos son los documentos registrados a tu RUT (RF-12)."
+                } else {
+                    "Busca por RUT y accede al expediente local."
+                },
+                color = Grey,
+                style = MaterialTheme.typography.bodyLarge
+            )
             Spacer(Modifier.height(14.dp))
 
             Row(
@@ -97,6 +105,9 @@ fun ConsultaExpedienteScreen(
                     placeholder = { Text("12.345.678-9", color = Grey) },
                     label = { Text("RUT del funcionario") },
                     singleLine = true,
+                    // Separacion de perfiles (RF-12): el funcionario consulta
+                    // solo su propio expediente; su RUT llega fijo de la sesion.
+                    readOnly = state.rutFijo,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.weight(1f)
                 )

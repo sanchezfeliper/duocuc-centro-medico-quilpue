@@ -6,6 +6,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import cl.cmq.salud.data.DocumentRepository
 import cl.cmq.salud.di.AppContainer
+import cl.cmq.salud.domain.model.Documento
+import cl.cmq.salud.domain.permissions.PermisosPorPerfil
+import cl.cmq.salud.domain.session.SesionActual
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,10 +19,16 @@ import kotlinx.coroutines.launch
  * Meta 6: ViewModel del destino P04 Detalle. Recibe el ID del documento
  * como argumento de navegacion y resuelve el dato contra la fuente unica
  * (DocumentRepository), no via objetos transportados entre pantallas.
+ *
+ * Separacion de perfiles: la sesion determina si el perfil puede editar o
+ * eliminar ESTE documento (RF-07 / minimo privilegio). Los permisos se
+ * calculan al cargar el documento y se vuelven a exigir antes de cada accion
+ * (defensa en profundidad: ocultar el boton no basta).
  */
 class DetalleViewModel(
     private val repo: DocumentRepository,
-    private val idDocumento: Int
+    private val idDocumento: Int,
+    private val sesion: SesionActual? = AppContainer.sesionActual.value
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DetalleUiState())
@@ -41,9 +50,37 @@ class DetalleViewModel(
                     )
                 }
             } else {
-                _uiState.update { it.copy(isLoading = false, documento = documento) }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        documento = documento,
+                        puedeEditar = puedeEditar(documento),
+                        puedeEliminar = puedeEliminar(documento)
+                    )
+                }
             }
         }
+    }
+
+    /** ¿El perfil activo puede modificar este documento, segun su estado y dueno? (RF-07) */
+    private fun puedeEditar(documento: Documento): Boolean {
+        val s = sesion ?: return false
+        return PermisosPorPerfil.puedeEditarDocumento(
+            perfil = s.perfil,
+            estado = documento.estado,
+            rutDocumento = documento.rutFuncionario,
+            rutSesion = s.rut
+        )
+    }
+
+    private fun puedeEliminar(documento: Documento): Boolean {
+        val s = sesion ?: return false
+        return PermisosPorPerfil.puedeEliminarDocumento(
+            perfil = s.perfil,
+            estado = documento.estado,
+            rutDocumento = documento.rutFuncionario,
+            rutSesion = s.rut
+        )
     }
 
     /** RF-14: el acceso (descarga/visualizacion) queda registrado (simulado; bitacora real en P08). */
@@ -58,6 +95,18 @@ class DetalleViewModel(
     // ------------------------------------------------------------------
 
     fun abrirConfirmacionEliminar() {
+        // Defensa en profundidad (RF-07): aunque la View oculte el boton, el
+        // ViewModel revalida el permiso sobre el documento cargado antes de
+        // habilitar el dialogo de borrado.
+        val documento = _uiState.value.documento
+        if (documento == null || !puedeEliminar(documento)) {
+            _uiState.update {
+                it.copy(
+                    errorEliminar = "Tu perfil no tiene permiso para eliminar este documento."
+                )
+            }
+            return
+        }
         _uiState.update { it.copy(showConfirmarEliminar = true, errorEliminar = null) }
     }
 
@@ -68,6 +117,27 @@ class DetalleViewModel(
     fun eliminarDocumento() {
         _uiState.update { it.copy(showConfirmarEliminar = false) }
         viewModelScope.launch {
+            // Revalida el permiso contra el estado vigente en el repositorio:
+            // entre abrir el dialogo y confirmar, otro perfil pudo cambiar el
+            // estado del documento (p. ej. aprobarlo) y retirar el permiso.
+            val actual = repo.buscarPorId(idDocumento)
+            if (actual == null) {
+                _uiState.update {
+                    it.copy(
+                        errorEliminar = "No se pudo eliminar el documento #$idDocumento: ya no existe en el almacenamiento local."
+                    )
+                }
+                return@launch
+            }
+            if (!puedeEliminar(actual)) {
+                _uiState.update {
+                    it.copy(
+                        errorEliminar = "Tu perfil no tiene permiso para eliminar este documento: " +
+                            "solo se pueden retirar los propios y mientras sigan pendientes."
+                    )
+                }
+                return@launch
+            }
             val borrado = repo.eliminarDocumento(idDocumento)
             if (borrado) {
                 _uiState.update { it.copy(documentoEliminado = true) }
@@ -83,11 +153,15 @@ class DetalleViewModel(
 
     /** Factory para crear el ViewModel con el argumento de navegacion (sin Hilt aun). */
     companion object {
-        fun factory(idDocumento: Int, repo: DocumentRepository = AppContainer.documentRepository): ViewModelProvider.Factory =
+        fun factory(
+            idDocumento: Int,
+            repo: DocumentRepository = AppContainer.documentRepository,
+            sesion: SesionActual? = AppContainer.sesionActual.value
+        ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                    DetalleViewModel(repo, idDocumento) as T
+                    DetalleViewModel(repo, idDocumento, sesion) as T
             }
     }
 }

@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import cl.cmq.salud.data.DocumentRepository
 import cl.cmq.salud.di.AppContainer
 import cl.cmq.salud.domain.model.EstadoDocumento
+import cl.cmq.salud.domain.permissions.PermisosPorPerfil
+import cl.cmq.salud.domain.session.SesionActual
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,9 +18,15 @@ import kotlinx.coroutines.launch
  * P06 Validacion (RF-15 a RF-17): bandeja de documentos pendientes y
  * registro de la decision de jefatura. MVVM: la View solo dibuja y emite
  * eventos; las reglas (comentario obligatorio en rechazo/correccion) viven aqui.
+ *
+ * Separacion de perfiles: solo los perfiles con facultad de validar (hoy ADM,
+ * RF-07) pueden listar la bandeja y registrar decisiones. El grafo ya reserva
+ * la ruta; aqui se vuelve a exigir el permiso antes de cada accion sensible
+ * (defensa en profundidad: no basta con ocultar el destino).
  */
 class ValidacionViewModel(
-    private val repo: DocumentRepository = AppContainer.documentRepository
+    private val repo: DocumentRepository = AppContainer.documentRepository,
+    private val sesion: SesionActual? = AppContainer.sesionActual.value
 ) : ViewModel() {
 
     companion object {
@@ -28,10 +36,25 @@ class ValidacionViewModel(
     private val _uiState = MutableStateFlow(ValidacionUiState())
     val uiState: StateFlow<ValidacionUiState> = _uiState.asStateFlow()
 
+    /** ¿El perfil activo puede validar? (RF-15/RF-07) */
+    private val puedeValidar: Boolean =
+        sesion?.let { PermisosPorPerfil.puedeValidar(it.perfil) } ?: false
+
     init { cargarPendientes() }
 
     fun cargarPendientes() {
-        _uiState.update { it.copy(isLoading = true) }
+        // Defensa en profundidad: sin permiso no se cargan datos de la bandeja.
+        if (!puedeValidar) {
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    pendientes = emptyList(),
+                    errorPermiso = "Tu perfil no tiene permiso para revisar documentos (RF-15)."
+                )
+            }
+            return
+        }
+        _uiState.update { it.copy(isLoading = true, errorPermiso = null) }
         viewModelScope.launch {
             val pendientes = repo.listarPendientes()
             _uiState.update { it.copy(isLoading = false, pendientes = pendientes) }
@@ -61,6 +84,16 @@ class ValidacionViewModel(
      * rechazar o solicitar correccion; en la aprobacion es opcional.
      */
     fun decidir(nuevoEstado: EstadoDocumento) {
+        // Defensa en profundidad (RF-07/RF-15): una decision solo se registra
+        // si el perfil activo tiene facultad de validar.
+        if (!puedeValidar) {
+            _uiState.update {
+                it.copy(
+                    comentarioError = "Tu perfil no tiene permiso para registrar decisiones de revisión."
+                )
+            }
+            return
+        }
         val state = _uiState.value
         val doc = state.seleccionado ?: return
 

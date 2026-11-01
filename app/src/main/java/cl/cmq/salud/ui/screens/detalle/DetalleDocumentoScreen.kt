@@ -231,21 +231,37 @@ fun DetalleDocumentoScreen(
                     )
 
                     // Semana 10: acciones de gestión del registro (editar / eliminar).
-                    Spacer(Modifier.height(9.dp))
-                    SecondaryButton(
-                        text = "Editar información",
-                        onClick = { onEditar(idDocumento) }
-                    )
-                    Spacer(Modifier.height(9.dp))
-                    TextButton(
-                        onClick = { vm.abrirConfirmacionEliminar() },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
+                    // Separación de perfiles: solo se ofrecen si el perfil activo
+                    // tiene el permiso sobre ESTE documento (RF-07). El ViewModel
+                    // vuelve a validar antes de ejecutar (defensa en profundidad).
+                    if (state.puedeEditar) {
+                        Spacer(Modifier.height(9.dp))
+                        SecondaryButton(
+                            text = "Editar información",
+                            onClick = { onEditar(idDocumento) }
+                        )
+                    }
+                    if (state.puedeEliminar) {
+                        Spacer(Modifier.height(9.dp))
+                        TextButton(
+                            onClick = { vm.abrirConfirmacionEliminar() },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                "Eliminar documento",
+                                color = Red,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                    if (!state.puedeEditar && !state.puedeEliminar) {
+                        Spacer(Modifier.height(9.dp))
                         Text(
-                            "Eliminar documento",
-                            color = Red,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
+                            "Este documento no admite cambios: ya fue revisado o no pertenece a tu expediente.",
+                            color = Grey,
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp
                         )
                     }
                     state.errorEliminar?.let { mensaje ->

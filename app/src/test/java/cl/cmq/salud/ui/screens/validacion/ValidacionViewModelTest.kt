@@ -5,6 +5,8 @@ import cl.cmq.salud.data.DocumentRepository
 import cl.cmq.salud.data.local.FakeDocumentoLocalDataSource
 import cl.cmq.salud.domain.model.Documento
 import cl.cmq.salud.domain.model.EstadoDocumento
+import cl.cmq.salud.domain.model.Perfil
+import cl.cmq.salud.domain.session.SesionActual
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -36,10 +38,18 @@ class ValidacionViewModelTest {
     private val repo = DocumentRepository(FakeDocumentoLocalDataSource())
     private lateinit var vm: ValidacionViewModel
 
+    /** Sesión con facultad de validar (RF-15/RF-07); sin ella la bandeja queda bloqueada. */
+    private val sesionAdmin = SesionActual(
+        rut = "12.345.678-9",
+        nombreCompleto = "Maria Gonzalez",
+        perfil = Perfil.ADM,
+        correoInstitucional = "maria.gonzalez@cmq.cl"
+    )
+
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher) // viewModelScope usa Dispatchers.Main
-        vm = ValidacionViewModel(repo)
+        vm = ValidacionViewModel(repo, sesionAdmin)
     }
 
     @After
@@ -145,5 +155,34 @@ class ValidacionViewModelTest {
 
         assertNotNull(vm.uiState.value.comentarioError)
         assertTrue(vm.uiState.value.successEventId == 0L)
+    }
+
+    // ------------------------------------------------------------------
+    // Separacion de perfiles (punto 10): solo ADM valida
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `un perfil sin facultad de validar no carga la bandeja ni decide`() = runTest(testDispatcher) {
+        val sesionFuncionario = SesionActual(
+            rut = "18.765.432-7",
+            nombreCompleto = "Juan Pérez",
+            perfil = Perfil.FUN,
+            correoInstitucional = "juan.perez@cmq.cl"
+        )
+        val vmFuncionario = ValidacionViewModel(repo, sesionFuncionario)
+        advanceUntilIdle()
+
+        // La bandeja ni siquiera se carga y queda el aviso de permiso.
+        assertTrue(vmFuncionario.uiState.value.pendientes.isEmpty())
+        assertNotNull(vmFuncionario.uiState.value.errorPermiso)
+
+        // Aunque se intente decidir, no se registra nada.
+        val pendienteId = repo.listarPendientes().first().idDocumento
+        vmFuncionario.onSeleccionar(pendienteId)
+        vmFuncionario.decidir(EstadoDocumento.APROBADO)
+        advanceUntilIdle()
+
+        assertEquals(EstadoDocumento.PENDIENTE, repo.buscarPorId(pendienteId)!!.estado)
+        assertTrue(vmFuncionario.uiState.value.successEventId == 0L)
     }
 }
