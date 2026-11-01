@@ -22,6 +22,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.cmq.salud.ui.components.AppTopBar
+import cl.cmq.salud.ui.components.MainBottomNavBar
 import cl.cmq.salud.ui.theme.Background
 import cl.cmq.salud.ui.theme.Divider
 import cl.cmq.salud.ui.theme.Grey
@@ -40,6 +42,7 @@ import cl.cmq.salud.ui.theme.Navy
 import cl.cmq.salud.ui.theme.SoftSage
 import cl.cmq.salud.ui.theme.Spruce
 import cl.cmq.salud.ui.theme.SurfaceWhite
+import cl.cmq.salud.ui.theme.Teal
 
 /**
  * Pantalla Perfil: datos de la persona logueada.
@@ -48,18 +51,41 @@ import cl.cmq.salud.ui.theme.SurfaceWhite
  * hay listado documental, solo la identidad y los datos laborales. El botón
  * "Ver mis documentos" lleva al historial, para que la diferencia quede clara
  * en la propia navegación.
+ *
+ * Según el perfil activo esta pantalla se alcanza de dos formas:
+ *  - Como destino principal (perfiles sin bandeja de revisión), con barra
+ *    inferior y sin flecha de retroceso: [activeIndex] >= 0.
+ *  - Como pantalla secundaria empujada sobre otra (perfiles que revisan),
+ *    con flecha de retroceso y sin barra: [activeIndex] < 0.
  */
 @Composable
 fun PerfilScreen(
     onVolver: () -> Unit,
     onVerMisDocumentos: () -> Unit,
+    onCerrarSesion: () -> Unit,
+    onMainDestinationSelected: (Int) -> Unit = {},
+    activeIndex: Int = -1,
     vm: PerfilViewModel = viewModel()
 ) {
     val state by vm.uiState.collectAsState()
+    val esDestinoPrincipal = activeIndex >= 0
 
     Scaffold(
         containerColor = Background,
-        topBar = { AppTopBar(title = "Mi perfil", onBack = onVolver) }
+        topBar = {
+            AppTopBar(
+                title = "Mi perfil",
+                onBack = if (esDestinoPrincipal) null else onVolver
+            )
+        },
+        bottomBar = {
+            if (esDestinoPrincipal) {
+                MainBottomNavBar(
+                    activeIndex = activeIndex,
+                    onItemSelected = onMainDestinationSelected
+                )
+            }
+        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -137,6 +163,17 @@ fun PerfilScreen(
             ) {
                 Text(
                     "Ver mis documentos",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            // Cerrar sesión vive aquí (no en el Home): la identidad y el cierre
+            // de sesión son responsabilidad de la pantalla de perfil.
+            TextButton(onClick = onCerrarSesion, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    "Cerrar sesión",
+                    color = Teal,
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold
                 )

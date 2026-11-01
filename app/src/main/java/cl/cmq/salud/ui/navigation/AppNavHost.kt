@@ -71,21 +71,33 @@ fun AppNavHost() {
     }
 
     fun navigateToMainDestination(index: Int) {
+        val perfilActivo = sesion?.perfil
+        val puedeRevisar = perfilActivo != null && PermisosPorPerfil.veRevision(perfilActivo)
+        // Índices de la barra inferior. El cuarto botón existe siempre, pero
+        // apunta a un destino distinto: Revisión para quien revisa (RF-15) y
+        // Perfil para el resto. Así ningún perfil ve un botón que no puede usar.
         val route = when (index) {
             0 -> AppDestinos.Home.route
             1 -> AppDestinos.Expediente.route
             2 -> AppDestinos.Carga.route
-            3 -> AppDestinos.Revision.route
+            3 -> if (puedeRevisar) AppDestinos.Revision.route else AppDestinos.Perfil.route
             else -> return
         }
-        val perfilActivo = sesion?.perfil
-        if (route == AppDestinos.Revision.route &&
-            (perfilActivo == null || !PermisosPorPerfil.veRevision(perfilActivo))
-        ) {
+        if (route == AppDestinos.Revision.route && !puedeRevisar) {
             Toast.makeText(context, "Tu perfil no tiene acceso a la bandeja de revisión.", Toast.LENGTH_SHORT).show()
             return
         }
         navController.navigate(route) {
+            popUpTo(AppDestinos.Home.route) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
+    // El botón "Perfil" de la barra inferior vuelve a su pestaña en lugar de
+    // apilar una copia: la barra muestra Perfil como destino activo.
+    fun volverAPerfil(@Suppress("UNUSED_PARAMETER") index: Int) {
+        navController.navigate(AppDestinos.Perfil.route) {
             popUpTo(AppDestinos.Home.route) { saveState = true }
             launchSingleTop = true
             restoreState = true
@@ -140,7 +152,17 @@ fun AppNavHost() {
                 PerfilScreen(
                     onVolver = { navController.popBackStack() },
                     // "Ver mis documentos" lleva al historial (Expediente).
-                    onVerMisDocumentos = { navigateToMainDestination(1) }
+                    onVerMisDocumentos = { navigateToMainDestination(1) },
+                    onCerrarSesion = {
+                        AppContainer.cerrarSesion()
+                        navController.navigate(AppDestinos.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                    // Para los perfiles sin bandeja de revisión, Perfil es el
+                    // cuarto destino de la barra inferior y se pinta como tal.
+                    onMainDestinationSelected = ::volverAPerfil,
+                    activeIndex = if (PermisosPorPerfil.veRevision(it.perfil)) 3 else -1
                 )
             }
         }
@@ -150,10 +172,6 @@ fun AppNavHost() {
                 onNavigateExpediente = { navigateToMainDestination(1) },
                 onNavigateCarga = { navigateToMainDestination(2) },
                 onNavigateRevision = { navigateToMainDestination(3) },
-                onNavigateBitacora = {
-                    Toast.makeText(context, "Próximamente: Bitácora de auditoría (P08)", Toast.LENGTH_SHORT).show()
-                },
-                onNavigatePerfil = { navController.navigate(AppDestinos.Perfil.route) },
                 onCerrarSesion = {
                     AppContainer.cerrarSesion()
                     navController.navigate(AppDestinos.Login.route) {
