@@ -107,6 +107,11 @@ fun ValidacionScreen(
             Spacer(Modifier.height(16.dp))
 
             when {
+                state.errorPermiso != null -> EmptyState(
+                    title = "Acceso restringido",
+                    detail = state.errorPermiso ?: "",
+                    modifier = Modifier.fillMaxWidth()
+                )
                 state.isLoading -> Box(
                     modifier = Modifier.fillMaxWidth().height(220.dp),
                     contentAlignment = Alignment.Center
