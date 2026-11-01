@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -41,6 +42,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import cl.cmq.salud.domain.model.Perfil
+import cl.cmq.salud.domain.validation.CatalogoCuentasDemo
 import cl.cmq.salud.ui.components.PrimaryButton
 import cl.cmq.salud.ui.theme.Background
 import cl.cmq.salud.ui.theme.Blue
@@ -177,10 +180,47 @@ fun LoginScreen(
                         fontSize = 12.sp,
                         lineHeight = 17.sp
                     )
+                    Spacer(Modifier.height(14.dp))
+                    HorizontalDivider(color = Border)
+                    Spacer(Modifier.height(12.dp))
+                    CuentasDemoAyuda()
                 }
             }
         }
     }
+}
+
+/**
+ * Ayuda de demostración: lista las cuentas ficticias del MVP (RN-03) para que
+ * quien evalúe la app pueda entrar como administración o como funcionario sin
+ * adivinar credenciales. Muestra el RUT y la pista de la clave, que es pública
+ * por ser un dato de prueba y no una credencial real.
+ */
+@Composable
+private fun CuentasDemoAyuda() {
+    Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+        Text(
+            "Cuentas de demostración",
+            color = Navy,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        CatalogoCuentasDemo.cuentas.forEach { cuenta ->
+            Text(
+                "• ${cuenta.descripcion} · clave: ${pistaClave(cuenta.sesion.perfil)}",
+                color = Grey,
+                fontSize = 12.sp,
+                lineHeight = 17.sp
+            )
+        }
+    }
+}
+
+/** Clave demo asociada al perfil, mostrada como ayuda de acceso. */
+private fun pistaClave(perfil: Perfil): String = when (perfil) {
+    Perfil.ADM -> "admin123"
+    Perfil.FUN -> "funcionario123"
+    else -> "—"
 }
 
 @Composable
