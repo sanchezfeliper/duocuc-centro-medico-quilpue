@@ -20,7 +20,27 @@ object SemillaDocumentos {
             rut = "18.765.432-7",
             nombreCompleto = "Juan Pérez",
             cargo = "Enfermero",
-            centroSalud = "CESFAM Quilpué"
+            centroSalud = "CESFAM Quilpué",
+            profesion = "Enfermería",
+            tipoContrato = "Planta",
+            fechaIngreso = "2026-02-01",
+            correo = "juan.perez@cmq.cl",
+            perfilRol = "FUN"
+        ),
+        // Cuenta de administración de demostración (CatalogoCuentasDemo.ADMIN).
+        // Se registra sin documentos: así el expediente existe aunque todavía
+        // no tenga archivos y Perfil puede mostrar sus datos laborales.
+        Funcionario(
+            idFuncionario = 102,
+            rut = "12.345.678-9",
+            nombreCompleto = "Maria Gonzalez",
+            cargo = "Administrativo",
+            centroSalud = "CESFAM Quilpué",
+            profesion = "Administración",
+            tipoContrato = "Contrata",
+            fechaIngreso = "2025-11-15",
+            correo = "maria.gonzalez@cmq.cl",
+            perfilRol = "ADM"
         )
     )
 
