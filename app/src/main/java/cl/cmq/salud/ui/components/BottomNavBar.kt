@@ -12,8 +12,8 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -35,8 +35,13 @@ import cl.cmq.salud.ui.theme.TextSecondary
  * caracteres Unicode, etiquetas siempre visibles y anuncio semántico
  * del destino seleccionado. Reserva su espacio sin solapar scroll.
  *
- * Cuatro destinos principales: Inicio, Expediente, Cargar y Revisión.
+ * Cuatro destinos principales: Inicio, Expediente, Cargar y Perfil.
  * Targetas táctiles de al menos 48 dp.
+ *
+ * El cuarto destino es Perfil, no Revisión: la bandeja de revisión (RF-15)
+ * es exclusiva de Administrador (mínimo privilegio), por lo que no puede
+ * ofrecerse como botón fijo a todos los perfiles. Quien debe revisar entra
+ * desde la tarjeta de tareas del Home.
  */
 data class NavItem(
     val icon: ImageVector,
@@ -100,17 +105,24 @@ private val MainNavigationItems = listOf(
     NavItem(Icons.Default.Home, "Inicio", "Ir a inicio"),
     NavItem(Icons.Default.Search, "Expediente", "Consultar expediente"),
     NavItem(Icons.Default.Add, "Cargar", "Cargar documento"),
-    NavItem(Icons.Default.CheckCircle, "Revisión", "Bandeja de revisión")
+    NavItem(Icons.Default.Person, "Perfil", "Ver mi perfil")
 )
 
+/**
+ * Barra inferior de la zona interna.
+ *
+ * [items] permite ajustar los destinos al perfil activo; por defecto usa los
+ * cuatro destinos comunes ([MainNavigationItems]).
+ */
 @Composable
 fun MainBottomNavBar(
     activeIndex: Int,
     onItemSelected: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    items: List<NavItem> = MainNavigationItems
 ) {
     BottomNavBar(
-        items = MainNavigationItems,
+        items = items,
         activeIndex = activeIndex,
         onItemSelected = onItemSelected,
         modifier = modifier
