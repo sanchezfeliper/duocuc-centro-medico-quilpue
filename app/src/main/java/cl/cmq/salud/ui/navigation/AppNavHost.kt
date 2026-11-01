@@ -80,18 +80,16 @@ fun AppNavHost() {
         // única tabla de la app, así ninguna pantalla puede desincronizarse de
         // ella. Aquí solo se traduce el destino a su ruta y se valida el
         // permiso (defensa en profundidad: ocultar el botón no basta).
-        val route = when (BottomNavItem.destinoDe(index, puedeRevisar)) {
+        val route = when (val destino = BottomNavItem.destinoDe(index, puedeRevisar)) {
             RutaPrincipal.Inicio -> AppDestinos.Home.route
             RutaPrincipal.Expediente -> AppDestinos.Expediente.route
             RutaPrincipal.Carga -> AppDestinos.Carga.route
             RutaPrincipal.Perfil -> AppDestinos.Perfil.route
             RutaPrincipal.Revision -> AppDestinos.Revision.route
             null -> {
-                // Índice sin destino, o Revisión pedida sin permiso: se avisa
-                // cuando el botón existe pero el perfil no puede usarlo.
-                if (index == BottomNavItem.PERFIL + 1) {
-                    Toast.makeText(context, "Tu perfil no tiene acceso a la bandeja de revisión.", Toast.LENGTH_SHORT).show()
-                }
+                // Sin destino solo queda el caso de Revisión pedida sin permiso
+                // (el botón existe para otros perfiles, no para este).
+                Toast.makeText(context, "Tu perfil no tiene acceso a la bandeja de revisión.", Toast.LENGTH_SHORT).show()
                 return
             }
         }
@@ -147,6 +145,8 @@ fun AppNavHost() {
 
         composable(AppDestinos.Perfil.route) {
             SesionRequerida(sesion) { sesionActiva ->
+                // Perfil cierra la barra: su índice depende de si hay Revisión.
+                val itemsPerfil = mainNavigationItemsPara(PermisosPorPerfil.veRevision(sesionActiva.perfil))
                 PerfilScreen(
                     onVolver = { navController.popBackStack() },
                     // "Ver mis documentos" lleva al historial (Expediente).
@@ -161,8 +161,8 @@ fun AppNavHost() {
                     // perfiles, también para administración: la bandeja de
                     // revisión no reemplaza el acceso a los propios datos.
                     onMainDestinationSelected = ::navigateToMainDestination,
-                    items = mainNavigationItemsPara(PermisosPorPerfil.veRevision(sesionActiva.perfil)),
-                    activeIndex = BottomNavItem.PERFIL
+                    items = itemsPerfil,
+                    activeIndex = BottomNavItem.indicePerfil(itemsPerfil) ?: 0
                 )
             }
         }
@@ -175,7 +175,7 @@ fun AppNavHost() {
                 onMainDestinationSelected = ::navigateToMainDestination,
                 // Las tarjetas del contenido sí apuntan a un destino concreto.
                 onNavigateExpediente = { navigateToMainDestination(BottomNavItem.EXPEDIENTE) },
-                onNavigateRevision = { navigateToMainDestination(BottomNavItem.PERFIL + 1) },
+                onNavigateRevision = { navigateToMainDestination(BottomNavItem.REVISION) },
                 onCerrarSesion = {
                     AppContainer.cerrarSesion()
                     navController.navigate(AppDestinos.Login.route) {

@@ -9,8 +9,11 @@ import org.junit.Test
  * Composición de la barra inferior por perfil.
  *
  * Regla de negocio cubierta: el botón de Revisión (RF-15) es un quinto destino
- * que solo ve quien puede revisar; Perfil deja de ser exclusivo de los perfiles
- * sin bandeja y aparece siempre.
+ * que solo ve quien puede revisar, y Perfil cierra siempre la barra (es el
+ * último botón) para todos los perfiles. Orden:
+ *
+ *  - Funcionario: Inicio, Expediente, Cargar, Perfil
+ *  - Administración: Inicio, Expediente, Cargar, Revisión, Perfil
  */
 class BottomNavBarTest {
 
@@ -24,32 +27,55 @@ class BottomNavBarTest {
     }
 
     @Test
-    fun `perfil con bandeja suma el quinto boton de revision`() {
+    fun `perfil con bandeja suma revision antes de Perfil`() {
         val items = mainNavigationItemsPara(puedeRevisar = true)
 
         assertEquals(5, items.size)
-        assertEquals("Revisión", items.last().label)
-        assertEquals(4, BottomNavItem.indiceRevision(items))
+        assertEquals(listOf("Inicio", "Expediente", "Cargar", "Revisión", "Perfil"), items.map { it.label })
     }
 
     @Test
-    fun `perfil sigue siendo el cuarto destino aunque exista revision`() {
+    fun `Perfil es el ultimo boton en ambos perfiles`() {
+        // Regla pedida: Perfil cierra la barra siempre, con o sin Revisión.
+        assertEquals("Perfil", mainNavigationItemsPara(puedeRevisar = false).last().label)
+        assertEquals("Perfil", mainNavigationItemsPara(puedeRevisar = true).last().label)
+    }
+
+    @Test
+    fun `Revision va inmediatamente antes de Perfil`() {
         val items = mainNavigationItemsPara(puedeRevisar = true)
+        val indiceRevision = BottomNavItem.indiceRevision(items)!!
+        val indicePerfil = BottomNavItem.indicePerfil(items)!!
 
-        assertEquals("Perfil", items[BottomNavItem.PERFIL].label)
-        assertEquals("Cargar", items[BottomNavItem.CARGA].label)
-        assertEquals("Expediente", items[BottomNavItem.EXPEDIENTE].label)
-        assertEquals("Inicio", items[BottomNavItem.INICIO].label)
+        assertEquals(indiceRevision + 1, indicePerfil)
+        assertEquals("Revisión", items[indiceRevision].label)
     }
 
-    // --- Mapeo índice -> destino (regresión: Perfil debe abrirse desde la barra) ---
+    @Test
+    fun `los tres primeros destinos son comunes a todo perfil`() {
+        for (puedeRevisar in listOf(false, true)) {
+            val items = mainNavigationItemsPara(puedeRevisar)
+            assertEquals("Inicio", items[BottomNavItem.INICIO].label)
+            assertEquals("Expediente", items[BottomNavItem.EXPEDIENTE].label)
+            assertEquals("Cargar", items[BottomNavItem.CARGA].label)
+        }
+    }
+
+    // --- Mapeo índice -> destino (regresión: cada botón debe navegar a algo) ---
 
     @Test
-    fun `el indice de Perfil abre Perfil para ambos perfiles`() {
-        // Regresión: antes Home cableaba el índice 3 a Revisión (solo admin) y
-        // Perfil no se abría desde ahí. Perfil es un destino para todo perfil.
-        assertEquals(RutaPrincipal.Perfil, BottomNavItem.destinoDe(BottomNavItem.PERFIL, puedeRevisar = false))
-        assertEquals(RutaPrincipal.Perfil, BottomNavItem.destinoDe(BottomNavItem.PERFIL, puedeRevisar = true))
+    fun `el indice de Perfil abre Perfil en ambos perfiles`() {
+        // Funcionario: Perfil ocupa el índice 3. Administración: el 4.
+        assertEquals(RutaPrincipal.Perfil, BottomNavItem.destinoDe(3, puedeRevisar = false))
+        assertEquals(RutaPrincipal.Perfil, BottomNavItem.destinoDe(4, puedeRevisar = true))
+    }
+
+    @Test
+    fun `el indice 3 es Revision con bandeja y Perfil sin bandeja`() {
+        val indice = BottomNavItem.REVISION
+
+        assertEquals(RutaPrincipal.Revision, BottomNavItem.destinoDe(indice, puedeRevisar = true))
+        assertEquals(RutaPrincipal.Perfil, BottomNavItem.destinoDe(indice, puedeRevisar = false))
     }
 
     @Test
@@ -62,11 +88,8 @@ class BottomNavBarTest {
     }
 
     @Test
-    fun `Revision solo resuelve para quien puede revisar`() {
-        val indiceRevision = BottomNavItem.PERFIL + 1
-
-        assertEquals(RutaPrincipal.Revision, BottomNavItem.destinoDe(indiceRevision, puedeRevisar = true))
-        assertNull(BottomNavItem.destinoDe(indiceRevision, puedeRevisar = false))
+    fun `el quinto indice no existe sin bandeja de revision`() {
+        assertNull(BottomNavItem.destinoDe(BottomNavItem.REVISION + 1, puedeRevisar = false))
     }
 
     @Test

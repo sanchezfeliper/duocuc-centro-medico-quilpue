@@ -74,7 +74,8 @@ fun ValidacionScreen(
     val state by vm.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val itemsBarra = mainNavigationItemsPara(puedeRevisar)
-    val indiceRevision = BottomNavItem.indiceRevision(itemsBarra) ?: BottomNavItem.PERFIL
+    // En la bandeja el botón de Revisión siempre está: es el destino actual.
+    val indiceRevision = BottomNavItem.indiceRevision(itemsBarra) ?: BottomNavItem.REVISION
 
     LaunchedEffect(state.successEventId) {
         if (state.successEventId > 0) {
