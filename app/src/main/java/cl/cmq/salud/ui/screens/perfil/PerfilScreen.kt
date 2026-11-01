@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.cmq.salud.ui.components.AppTopBar
 import cl.cmq.salud.ui.components.MainBottomNavBar
+import cl.cmq.salud.ui.components.NavItem
 import cl.cmq.salud.ui.theme.Background
 import cl.cmq.salud.ui.theme.Divider
 import cl.cmq.salud.ui.theme.Grey
@@ -57,6 +58,11 @@ import cl.cmq.salud.ui.theme.Teal
  *    inferior y sin flecha de retroceso: [activeIndex] >= 0.
  *  - Como pantalla secundaria empujada sobre otra (perfiles que revisan),
  *    con flecha de retroceso y sin barra: [activeIndex] < 0.
+ *
+ * Con [activeIndex] = 0 y una lista de [items] no vacía, la pantalla se
+ * comporta como un destino más de la barra inferior. Perfil ya no queda fuera
+ * de ella para administración ([items] incluye Revisión): sus datos propios y
+ * la bandeja conviven en la misma barra.
  */
 @Composable
 fun PerfilScreen(
@@ -65,10 +71,11 @@ fun PerfilScreen(
     onCerrarSesion: () -> Unit,
     onMainDestinationSelected: (Int) -> Unit = {},
     activeIndex: Int = -1,
+    items: List<NavItem> = emptyList(),
     vm: PerfilViewModel = viewModel()
 ) {
     val state by vm.uiState.collectAsState()
-    val esDestinoPrincipal = activeIndex >= 0
+    val esDestinoPrincipal = activeIndex >= 0 && items.isNotEmpty()
 
     Scaffold(
         containerColor = Background,
@@ -82,7 +89,8 @@ fun PerfilScreen(
             if (esDestinoPrincipal) {
                 MainBottomNavBar(
                     activeIndex = activeIndex,
-                    onItemSelected = onMainDestinationSelected
+                    onItemSelected = onMainDestinationSelected,
+                    items = items
                 )
             }
         }

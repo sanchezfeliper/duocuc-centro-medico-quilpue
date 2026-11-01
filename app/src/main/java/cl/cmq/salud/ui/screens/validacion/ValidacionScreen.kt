@@ -42,6 +42,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.cmq.salud.domain.model.Documento
 import cl.cmq.salud.domain.model.EstadoDocumento
 import cl.cmq.salud.ui.components.AppTopBar
+import cl.cmq.salud.ui.components.BottomNavItem
 import cl.cmq.salud.ui.components.DocumentoCard
 import cl.cmq.salud.ui.components.DocumentoPreview
 import cl.cmq.salud.ui.components.EmptyState
@@ -49,6 +50,7 @@ import cl.cmq.salud.ui.components.MainBottomNavBar
 import cl.cmq.salud.ui.components.PrimaryButton
 import cl.cmq.salud.ui.components.SecondaryButton
 import cl.cmq.salud.ui.components.StatusChip
+import cl.cmq.salud.ui.components.mainNavigationItemsPara
 import cl.cmq.salud.ui.theme.Background
 import cl.cmq.salud.ui.theme.Blue
 import cl.cmq.salud.ui.theme.Border
@@ -65,10 +67,14 @@ import androidx.compose.material.icons.filled.CheckCircle
 fun ValidacionScreen(
     onVolver: () -> Unit,
     onMainDestinationSelected: (Int) -> Unit = {},
+    /** El destino se construye solo para perfiles con bandeja; la barra lo refleja. */
+    puedeRevisar: Boolean = true,
     vm: ValidacionViewModel = viewModel()
 ) {
     val state by vm.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val itemsBarra = mainNavigationItemsPara(puedeRevisar)
+    val indiceRevision = BottomNavItem.indiceRevision(itemsBarra) ?: BottomNavItem.PERFIL
 
     LaunchedEffect(state.successEventId) {
         if (state.successEventId > 0) {
@@ -84,7 +90,11 @@ fun ValidacionScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = { AppTopBar(title = "Revisión") },
         bottomBar = {
-            MainBottomNavBar(activeIndex = 3, onItemSelected = onMainDestinationSelected)
+            MainBottomNavBar(
+                activeIndex = indiceRevision,
+                onItemSelected = onMainDestinationSelected,
+                items = itemsBarra
+            )
         }
     ) { padding ->
         Column(

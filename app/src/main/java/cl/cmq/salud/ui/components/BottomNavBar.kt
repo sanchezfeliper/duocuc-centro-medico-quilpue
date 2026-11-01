@@ -11,6 +11,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.FactCheck
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
@@ -35,13 +36,16 @@ import cl.cmq.salud.ui.theme.TextSecondary
  * caracteres Unicode, etiquetas siempre visibles y anuncio semántico
  * del destino seleccionado. Reserva su espacio sin solapar scroll.
  *
- * Cuatro destinos principales: Inicio, Expediente, Cargar y Perfil.
- * Targetas táctiles de al menos 48 dp.
+ * Destinos principales: Inicio, Expediente, Cargar y Perfil, con una quinta
+ * posición de Revisión para los perfiles con bandeja de revisión (RF-15).
+ * Tarjetas táctiles de al menos 48 dp.
  *
- * El cuarto destino es Perfil, no Revisión: la bandeja de revisión (RF-15)
- * es exclusiva de Administrador (mínimo privilegio), por lo que no puede
- * ofrecerse como botón fijo a todos los perfiles. Quien debe revisar entra
- * desde la tarjeta de tareas del Home.
+ * [MainNavigationItems] son los cuatro destinos comunes a todos los perfiles.
+ * [mainNavigationItemsPara] agrega el quinto destino "Revisión" cuando el
+ * perfil activo puede revisar: el botón es fijo y explícito, no una sustitución
+ * del de Perfil, de modo que administración conserva tanto la bandeja como sus
+ * propios datos. Los perfiles sin bandeja ven cuatro botones: nunca se les
+ * ofrece una entrada que no pueden usar (mínimo privilegio, RF-07).
  */
 data class NavItem(
     val icon: ImageVector,
@@ -101,6 +105,7 @@ fun BottomNavBar(
     }
 }
 
+/** Cuatro destinos comunes: Inicio, Expediente, Cargar y Perfil. */
 private val MainNavigationItems = listOf(
     NavItem(Icons.Default.Home, "Inicio", "Ir a inicio"),
     NavItem(Icons.Default.Search, "Expediente", "Consultar expediente"),
@@ -108,11 +113,68 @@ private val MainNavigationItems = listOf(
     NavItem(Icons.Default.Person, "Perfil", "Ver mi perfil")
 )
 
+/** Quinto destino, disponible solo para quien tiene bandeja de revisión (RF-15). */
+private val RevisionNavItem = NavItem(
+    Icons.AutoMirrored.Filled.FactCheck,
+    "Revisión",
+    "Abrir bandeja de revisión"
+)
+
+/**
+ * Destinos de la barra inferior según el perfil activo.
+ *
+ * Devuelve los cuatro destinos comunes y, solo si [puedeRevisar], agrega
+ * "Revisión" al final. Los índices de [BottomNavItem] son la posición en la
+ * barra: quien navegue debe usar los valores de este modelo, no constantes.
+ */
+fun mainNavigationItemsPara(puedeRevisar: Boolean): List<NavItem> =
+    if (puedeRevisar) MainNavigationItems + RevisionNavItem else MainNavigationItems
+
+/** Índices canónicos de la barra inferior, en un solo lugar para no usar números sueltos. */
+object BottomNavItem {
+    const val INICIO = 0
+    const val EXPEDIENTE = 1
+    const val CARGA = 2
+    const val PERFIL = 3
+
+    /**
+     * Índice del botón de revisión de [items] (el último, cuando existe), o
+     * null si el perfil activo no lo tiene. Preguntar por el índice en lugar
+     * de asumir 4 deja la barra correcta aunque un perfil tenga otro orden.
+     */
+    fun indiceRevision(items: List<NavItem>): Int? =
+        items.lastIndex.takeIf { it > PERFIL }
+
+    /**
+     * Mapea el índice tocado en la barra inferior a su destino de navegación.
+     *
+     * Es la única tabla índice -> ruta de la app: las pantallas reenvían el
+     * índice crudo y el grafo resuelve aquí a dónde ir, de modo que ninguna
+     * mantiene una copia paralela que pueda desincronizarse. En particular,
+     * Perfil es siempre [PERFIL] para todo perfil (la bandeja de revisión es
+     * una entrada adicional, no una sustitución), y Revisión es el único
+     * destino condicionado al perfil. Devuelve la [RutaPrincipal] a la que
+     * navegar, o null si el índice no corresponde a ningún destino conocido.
+     */
+    fun destinoDe(indice: Int, puedeRevisar: Boolean): RutaPrincipal? = when (indice) {
+        INICIO -> RutaPrincipal.Inicio
+        EXPEDIENTE -> RutaPrincipal.Expediente
+        CARGA -> RutaPrincipal.Carga
+        PERFIL -> RutaPrincipal.Perfil
+        PERFIL + 1 -> if (puedeRevisar) RutaPrincipal.Revision else null
+        else -> null
+    }
+}
+
+/** Destinos alcanzables desde la barra inferior, sin acoplarse a las rutas del grafo. */
+enum class RutaPrincipal { Inicio, Expediente, Carga, Perfil, Revision }
+
 /**
  * Barra inferior de la zona interna.
  *
- * [items] permite ajustar los destinos al perfil activo; por defecto usa los
- * cuatro destinos comunes ([MainNavigationItems]).
+ * [items] ajusta los destinos al perfil activo; por defecto usa los cuatro
+ * destinos comunes ([MainNavigationItems]). Para los perfiles que revisan,
+ * pasar `mainNavigationItemsPara(puedeRevisar = true)`.
  */
 @Composable
 fun MainBottomNavBar(
