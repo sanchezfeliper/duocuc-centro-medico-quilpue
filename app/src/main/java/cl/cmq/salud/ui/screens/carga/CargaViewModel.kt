@@ -2,6 +2,7 @@
 package cl.cmq.salud.ui.screens.carga
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import cl.cmq.salud.data.DocumentRepository
 import cl.cmq.salud.di.AppContainer
@@ -16,11 +17,25 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 class CargaViewModel(
-    private val repo: DocumentRepository = AppContainer.documentRepository
+    private val repo: DocumentRepository = AppContainer.documentRepository,
+    // Semana 10: si viene un ID, el formulario opera en modo edición sobre ese
+    // documento existente; si es null, crea uno nuevo (comportamiento original).
+    private val idDocumentoEdicion: Int? = null
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(CargaUiState())
+    private val _uiState = MutableStateFlow(
+        CargaUiState(idDocumentoEnEdicion = idDocumentoEdicion, isEditando = idDocumentoEdicion != null)
+    )
     val uiState: StateFlow<CargaUiState> = _uiState.asStateFlow()
+
+    init {
+        // Precarga los datos del documento a editar en el formulario.
+        idDocumentoEdicion?.let { id ->
+            viewModelScope.launch {
+                repo.buscarPorId(id)?.let { doc -> precargar(doc) }
+            }
+        }
+    }
 
     companion object {
         // Extensiones aceptadas por RF-08
@@ -33,6 +48,19 @@ class CargaViewModel(
         private const val LARGO_MAX_NOMBRE_ARCHIVO = 150
         private const val LARGO_MIN_DESCRIPCION = 5
         private const val LARGO_MAX_DESCRIPCION = 200
+
+        /**
+         * Semana 10: factory para crear el ViewModel en modo edición con el ID
+         * del documento como argumento (patrón de DetalleViewModel.factory).
+         */
+        fun factory(
+            idDocumento: Int,
+            repo: DocumentRepository = AppContainer.documentRepository
+        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                CargaViewModel(repo, idDocumento) as T
+        }
     }
 
     // ------------------------------------------------------------------
@@ -213,6 +241,56 @@ class CargaViewModel(
         _uiState.value = CargaUiState()
     }
 
+    /**
+     * Semana 10 (editar): vuelca el documento existente en los campos del
+     * formulario. El origen se infiere de la ruta guardada: una ruta de cámara
+     * (filesDir/fotos) mantiene el modo cámara; una URI content:// o ausencia de
+     * adjunto se trata como archivo digital.
+     */
+    private fun precargar(doc: Documento) {
+        val ruta = doc.rutaLocal
+        val esCamara = ruta != null && !ruta.startsWith("content://")
+        _uiState.update {
+            it.copy(
+                rut = doc.rutFuncionario,
+                // El campo de la UI es la CATEGORÍA del documento (catálogo RN-08),
+                // mientras que Documento.tipo guarda el FORMATO de archivo (PDF/JPG).
+                // La categoría se recupera del nombre/descripción del registro.
+                tipoSeleccionado = tipoCatalogoDesde(doc.nombreArchivo, doc.descripcion),
+                nombreArchivo = doc.nombreArchivo,
+                descripcion = doc.descripcion.orEmpty(),
+                origen = if (esCamara) OrigenDocumento.CAMARA else OrigenDocumento.DIGITAL,
+                requiereValidacionUrgente = doc.estado == EstadoDocumento.PENDIENTE,
+                fotoRuta = if (esCamara) ruta else null,
+                fotoHash = if (esCamara) doc.hashArchivo else null,
+                fileUri = if (!esCamara) ruta else null,
+                fileNombre = if (!esCamara) doc.nombreArchivo else null,
+                // El formulario exige la declaración de autenticidad para guardar;
+                // un registro ya existente la cumple por haber sido cargado antes (RN-08).
+                declaraAutenticidad = true
+            )
+        }
+    }
+
+    /**
+     * Semana 10: reconstruye la categoría del catálogo a partir del nombre de
+     * archivo y la descripción del registro, ya que la base guarda el formato
+     * (PDF/JPG) en `tipo` y no la categoría. Si nada coincide, deja el catálogo
+     * en su valor por defecto para que el usuario lo confirme al guardar.
+     */
+    private fun tipoCatalogoDesde(nombre: String, descripcion: String?): String {
+        val texto = "$nombre ${descripcion.orEmpty()}".lowercase()
+        return when {
+            "anexo" in texto -> "Anexo de contrato"
+            "certificado" in texto || "capacitacion" in texto || "capacitación" in texto ->
+                "Certificado de capacitación"
+            "licencia" in texto || "medico" in texto || "médico" in texto -> "Licencia médica"
+            "contrato" in texto -> "Contrato de trabajo"
+            "permiso" in texto -> "Permiso administrativo"
+            else -> _uiState.value.tiposDisponibles.first()
+        }
+    }
+
     fun dismissSuccessDialog() {
         _uiState.update { it.copy(showSuccessDialog = false) }
     }
@@ -327,7 +405,35 @@ class CargaViewModel(
                 rutaLocal = state.fotoRuta ?: state.fileUri?.toString()
             )
 
-            val guardado = repo.guardarDocumento(nuevoDoc)
+            // Semana 10: en modo edición se conservan los datos de gestión del
+            // registro original (id, folio, estado, fecha y responsable de carga,
+            // comentario del revisor) y solo se actualizan los campos del formulario.
+            val guardado: Documento? = if (state.idDocumentoEnEdicion != null) {
+                val original = repo.buscarPorId(state.idDocumentoEnEdicion)
+                if (original == null) {
+                    _uiState.update {
+                        it.copy(
+                            isSubmitting = false,
+                            generalError = "No se encontró el documento #${state.idDocumentoEnEdicion}. " +
+                                "Puede haber sido eliminado; no se aplicaron cambios."
+                        )
+                    }
+                    return@launch
+                }
+                repo.actualizarDocumento(
+                    original.copy(
+                        tipo = tipoFormato,
+                        nombreArchivo = state.nombreArchivo.trim(),
+                        descripcion = state.descripcion.trim(),
+                        // El RUT puede cambiar el funcionario asociado
+                        rutFuncionario = state.rut.trim(),
+                        hashArchivo = state.fotoHash ?: original.hashArchivo,
+                        rutaLocal = state.fotoRuta ?: state.fileUri?.toString() ?: original.rutaLocal
+                    )
+                )
+            } else {
+                repo.guardarDocumento(nuevoDoc)
+            }
 
             _uiState.update {
                 it.copy(

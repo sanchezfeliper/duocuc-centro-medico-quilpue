@@ -28,6 +28,12 @@ interface DocumentoLocalDataSource {
     /** Actualiza un documento existente; null si el ID no existe. */
     suspend fun actualizarDocumento(documento: Documento): Documento?
 
+    /**
+     * Elimina el documento indicado. Devuelve true si existía y se borró,
+     * false si el ID no estaba en la base (Semana 10 - CRUD completo).
+     */
+    suspend fun eliminarDocumento(idDocumento: Int): Boolean
+
     /** Documentos en espera de decisión de jefatura (RF-15). */
     suspend fun listarPendientes(): List<Documento>
 

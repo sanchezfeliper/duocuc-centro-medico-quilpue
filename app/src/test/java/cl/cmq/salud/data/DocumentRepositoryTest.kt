@@ -131,6 +131,51 @@ class DocumentRepositoryTest {
     }
 
     // ------------------------------------------------------------------
+    // Semana 10: CRUD completo (editar / eliminar)
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `actualizarDocumento cambia los campos y conserva el folio`() = runBlocking {
+        val original = nuevoDocumento(rut = "20.111.222-2")
+
+        val editado = repo.actualizarDocumento(
+            original.copy(nombreArchivo = "renombrado.pdf", descripcion = "Descripción corregida")
+        )
+
+        assertNotNull(editado)
+        assertEquals(original.idDocumento, editado!!.idDocumento) // mismo folio
+        val recuperado = repo.buscarPorId(original.idDocumento)!!
+        assertEquals("renombrado.pdf", recuperado.nombreArchivo)
+        assertEquals("Descripción corregida", recuperado.descripcion)
+    }
+
+    @Test
+    fun `eliminarDocumento borra el registro del almacenamiento`() = runBlocking {
+        val doc = nuevoDocumento(rut = "20.111.222-2")
+        val antes = repo.contarDocumentos()
+
+        assertTrue(repo.eliminarDocumento(doc.idDocumento))
+
+        assertEquals(antes - 1, repo.contarDocumentos())
+        assertNull(repo.buscarPorId(doc.idDocumento))
+    }
+
+    @Test
+    fun `eliminarDocumento con ID inexistente devuelve false`() = runBlocking {
+        assertTrue(!repo.eliminarDocumento(99999))
+    }
+
+    @Test
+    fun `actualizarDocumento con ID inexistente devuelve null`() = runBlocking {
+        val fantasma = Documento(
+            idDocumento = 99999, idFuncionario = 1, rutFuncionario = "20.111.222-2",
+            tipo = "PDF", nombreArchivo = "x.pdf", estado = EstadoDocumento.VIGENTE,
+            fechaCarga = "2026-10-31", usuarioCarga = "Test", descripcion = "No existe"
+        )
+        assertNull(repo.actualizarDocumento(fantasma))
+    }
+
+    // ------------------------------------------------------------------
     // Casos INVALIDOS
     // ------------------------------------------------------------------
 

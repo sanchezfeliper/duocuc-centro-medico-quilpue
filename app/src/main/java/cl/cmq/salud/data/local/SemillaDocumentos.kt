@@ -25,14 +25,22 @@ object SemillaDocumentos {
     )
 
     fun documentos(): List<Documento> = listOf(
-        Documento(1, 101, "18.765.432-7", "PDF", "Contrato de trabajo",
-            EstadoDocumento.VIGENTE, "2026-03-12", "RRHH"),
-        Documento(2, 101, "18.765.432-7", "PDF", "Certificado capacitacion",
+        Documento(1, 101, "18.765.432-7", "PDF", "contrato_trabajo_juan_perez.pdf",
+            EstadoDocumento.VIGENTE, "2026-03-12", "RRHH",
+            descripcion = "Contrato de trabajo vigente del funcionario.",
+            rutaLocal = "content://cmq.seed/expediente/contrato_trabajo_juan_perez.pdf"),
+        Documento(2, 101, "18.765.432-7", "PDF", "certificado_capacitacion_primeros_auxilios.pdf",
             EstadoDocumento.PENDIENTE, "2026-09-20", "J. Perez",
-            fechaVencimiento = "2026-12-20"),
-        Documento(3, 101, "18.765.432-7", "PDF", "Permiso medico",
-            EstadoDocumento.APROBADO, "2026-09-18", "J. Perez"),
-        Documento(4, 101, "18.765.432-7", "JPG", "Anexo contrato",
-            EstadoDocumento.RECHAZADO, "2026-09-05", "M. Gonzalez")
+            descripcion = "Certificado de capacitación en primeros auxilios.",
+            fechaVencimiento = "2026-12-20",
+            rutaLocal = "content://cmq.seed/expediente/certificado_capacitacion_primeros_auxilios.pdf"),
+        Documento(3, 101, "18.765.432-7", "PDF", "permiso_medico_reposo.pdf",
+            EstadoDocumento.APROBADO, "2026-09-18", "J. Perez",
+            descripcion = "Permiso médico por reposo de tres días.",
+            rutaLocal = "content://cmq.seed/expediente/permiso_medico_reposo.pdf"),
+        Documento(4, 101, "18.765.432-7", "JPG", "anexo_contrato_horas_extra.jpg",
+            EstadoDocumento.RECHAZADO, "2026-09-05", "M. Gonzalez",
+            descripcion = "Anexo de contrato por horas extraordinarias.",
+            rutaLocal = "content://cmq.seed/expediente/anexo_contrato_horas_extra.jpg")
     )
 }

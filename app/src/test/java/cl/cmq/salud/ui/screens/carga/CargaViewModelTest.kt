@@ -187,4 +187,57 @@ class CargaViewModelTest {
         assertNull(state.fotoHash)
         assertEquals("", state.nombreArchivo) // el nombre provenia de la captura y se limpia
     }
+
+    // ------------------------------------------------------------------
+    // Semana 10: edición de un documento existente (CRUD - Update)
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `modo edicion precarga los datos del documento existente`() = runTest(testDispatcher) {
+        val repo = DocumentRepository(FakeDocumentoLocalDataSource())
+        // Documento semilla #1 del repositorio
+        val original = repo.buscarPorId(1)!!
+
+        val vm = CargaViewModel(repo, idDocumentoEdicion = 1)
+        advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertTrue(state.isEditando)
+        assertEquals(1, state.idDocumentoEnEdicion)
+        assertEquals(original.rutFuncionario, state.rut)
+        assertEquals(original.nombreArchivo, state.nombreArchivo)
+        assertEquals(original.descripcion.orEmpty(), state.descripcion)
+    }
+
+    @Test
+    fun `guardar en modo edicion actualiza el mismo folio sin crear uno nuevo`() = runTest(testDispatcher) {
+        val repo = DocumentRepository(FakeDocumentoLocalDataSource())
+        val antes = repo.contarDocumentos()
+
+        val vm = CargaViewModel(repo, idDocumentoEdicion = 1)
+        advanceUntilIdle()
+        vm.onDescripcionChange("Descripción actualizada por el usuario")
+        vm.guardarDocumento()
+        advanceUntilIdle()
+
+        val editado = vm.uiState.value.documentoCreado
+        assertNotNull(editado)
+        assertEquals(1, editado!!.idDocumento)                     // mismo folio
+        assertEquals("Descripción actualizada por el usuario", editado.descripcion)
+        assertEquals(antes, repo.contarDocumentos())               // no se creó un registro extra
+    }
+
+    @Test
+    fun `formulario sin modo edicion sigue creando un documento nuevo`() = runTest(testDispatcher) {
+        val repo = DocumentRepository(FakeDocumentoLocalDataSource())
+        val antes = repo.contarDocumentos()
+
+        val vm = CargaViewModel(repo)                              // sin idDocumentoEdicion
+        cargarFormularioValido(vm)
+        vm.guardarDocumento()
+        advanceUntilIdle()
+
+        assertEquals(antes + 1, repo.contarDocumentos())
+        assertTrue(vm.uiState.value.documentoCreado!!.idDocumento > 1)
+    }
 }

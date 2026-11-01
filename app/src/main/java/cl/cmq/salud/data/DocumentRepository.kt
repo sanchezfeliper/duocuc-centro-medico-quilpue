@@ -53,6 +53,21 @@ class DocumentRepository(
     suspend fun listarPendientes(): List<Documento> = local.listarPendientes()
 
     /**
+     * Actualiza los datos de un documento existente (Semana 10 - editar).
+     * El documento debe traer su idDocumento; devuelve la versión guardada,
+     * o null si el ID ya no existe en el almacenamiento local.
+     */
+    suspend fun actualizarDocumento(documento: Documento): Documento? =
+        local.actualizarDocumento(documento)
+
+    /**
+     * Elimina un documento del almacenamiento local (Semana 10 - eliminar).
+     * Devuelve true si existía y se borró, false si el ID ya no estaba.
+     */
+    suspend fun eliminarDocumento(idDocumento: Int): Boolean =
+        local.eliminarDocumento(idDocumento)
+
+    /**
      * Total de documentos que hoy viven en el almacenamiento local del
      * dispositivo (Semana 9.2). Lo usan las pantallas para mostrar el origen
      * de los datos que el usuario está viendo.

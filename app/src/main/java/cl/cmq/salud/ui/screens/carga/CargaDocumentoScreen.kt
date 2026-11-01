@@ -168,7 +168,7 @@ fun CargaDocumentoScreen(
     Scaffold(
         containerColor = Background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = { AppTopBar(title = "Cargar documento") },
+        topBar = { AppTopBar(title = if (state.isEditando) "Editar documento" else "Cargar documento") },
         bottomBar = {
             MainBottomNavBar(activeIndex = 2, onItemSelected = onMainDestinationSelected)
         }
@@ -659,16 +659,24 @@ fun CargaDocumentoScreen(
                 }
             } else {
                 PrimaryButton(
-                    text = if (state.isSubmitting) "Guardando..." else "Guardar y Registrar Documento",
+                    text = when {
+                        state.isSubmitting -> "Guardando..."
+                        state.isEditando -> "Guardar cambios"
+                        else -> "Guardar y Registrar Documento"
+                    },
                     onClick = { vm.guardarDocumento() }
                 )
-                Spacer(Modifier.height(12.dp))
-                // Guía: "Limpiar formulario" → secundaria menos prominente + confirmación
-                SecondaryButton(
-                    text = "Limpiar formulario",
-                    onClick = { setShowClearDialog(true) },
-                    icon = Icons.Default.Delete
-                )
+                // En modo edición no se ofrece "limpiar": vaciaría el registro
+                // original; para descartar cambios basta volver atrás.
+                if (!state.isEditando) {
+                    Spacer(Modifier.height(12.dp))
+                    // Guía: "Limpiar formulario" → secundaria menos prominente + confirmación
+                    SecondaryButton(
+                        text = "Limpiar formulario",
+                        onClick = { setShowClearDialog(true) },
+                        icon = Icons.Default.Delete
+                    )
+                }
             }
 
             Spacer(Modifier.height(16.dp))
@@ -711,11 +719,22 @@ fun CargaDocumentoScreen(
         AlertDialog(
             onDismissRequest = { vm.dismissSuccessDialog() },
             title = {
-                Text("¡Documento Registrado!", fontWeight = FontWeight.Bold, color = Navy)
+                Text(
+                    if (state.isEditando) "¡Documento Actualizado!" else "¡Documento Registrado!",
+                    fontWeight = FontWeight.Bold,
+                    color = Navy
+                )
             },
             text = {
                 Column {
-                    Text("El documento se ha procesado y guardado correctamente.", fontSize = 12.sp)
+                    Text(
+                        if (state.isEditando) {
+                            "Los cambios se guardaron correctamente en el almacenamiento local."
+                        } else {
+                            "El documento se ha procesado y guardado correctamente."
+                        },
+                        fontSize = 12.sp
+                    )
                     Spacer(Modifier.height(8.dp))
                     Text("• Folio: #${doc.idDocumento}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     Text("• Archivo: ${doc.nombreArchivo}", fontSize = 12.sp)
@@ -735,8 +754,14 @@ fun CargaDocumentoScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { vm.cargarOtro() }) {
-                    Text("Cargar otro", color = Grey)
+                if (state.isEditando) {
+                    TextButton(onClick = { vm.dismissSuccessDialog() }) {
+                        Text("Seguir editando", color = Grey)
+                    }
+                } else {
+                    TextButton(onClick = { vm.cargarOtro() }) {
+                        Text("Cargar otro", color = Grey)
+                    }
                 }
             }
         )
