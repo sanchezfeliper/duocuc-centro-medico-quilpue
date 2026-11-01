@@ -73,9 +73,13 @@ fun AppNavHost() {
         }
     }
 
+    // ¿El perfil con sesión puede revisar? Fuente única para la barra inferior
+    // y para validar el destino de Revisión (RF-15 / mínimo privilegio).
+    fun puedeRevisarActivo(): Boolean =
+        sesion?.perfil?.let { PermisosPorPerfil.veRevision(it) } == true
+
     fun navigateToMainDestination(index: Int) {
-        val perfilActivo = sesion?.perfil
-        val puedeRevisar = perfilActivo != null && PermisosPorPerfil.veRevision(perfilActivo)
+        val puedeRevisar = puedeRevisarActivo()
         // El mapeo índice -> destino vive en BottomNavItem.destinoDe: es la
         // única tabla de la app, así ninguna pantalla puede desincronizarse de
         // ella. Aquí solo se traduce el destino a su ruta y se valida el
@@ -189,6 +193,9 @@ fun AppNavHost() {
             ConsultaExpedienteScreen(
                 onVolver = { navController.popBackStack() },
                 onMainDestinationSelected = ::navigateToMainDestination,
+                // La barra refleja el perfil activo: administración también ve
+                // su botón de Revisión desde aquí, no solo los cuatro comunes.
+                items = mainNavigationItemsPara(puedeRevisarActivo()),
                 // Meta 6: Listado -> Detalle pasando el ID por la ruta
                 onDocumentoClick = { idDocumento ->
                     navController.navigate(AppDestinos.Detalle.crearRuta(idDocumento))
@@ -224,6 +231,7 @@ fun AppNavHost() {
             CargaDocumentoScreen(
                 onVolver = { navController.popBackStack() },
                 onMainDestinationSelected = ::navigateToMainDestination,
+                items = mainNavigationItemsPara(puedeRevisarActivo()),
                 vm = viewModel(
                     key = "carga_editar_$idDocumento",
                     factory = CargaViewModel.factory(idDocumento)
@@ -259,6 +267,7 @@ fun AppNavHost() {
             CargaDocumentoScreen(
                 onVolver = { navController.popBackStack() },
                 onMainDestinationSelected = ::navigateToMainDestination,
+                items = mainNavigationItemsPara(puedeRevisarActivo()),
                 onCargaExitosa = { idDocumento ->
                     Toast.makeText(context, "Documento #$idDocumento registrado exitosamente", Toast.LENGTH_SHORT).show()
                     navController.navigate(AppDestinos.Home.route) {

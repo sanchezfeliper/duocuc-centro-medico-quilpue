@@ -62,8 +62,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.cmq.salud.ui.components.AppTopBar
+import cl.cmq.salud.ui.components.BottomNavItem
 import cl.cmq.salud.ui.components.ImagenLocal
 import cl.cmq.salud.ui.components.MainBottomNavBar
+import cl.cmq.salud.ui.components.NavItem
 import cl.cmq.salud.ui.components.PrimaryButton
 import cl.cmq.salud.ui.components.SecondaryButton
 import cl.cmq.salud.ui.theme.Background
@@ -88,6 +90,7 @@ fun CargaDocumentoScreen(
     onVolver: () -> Unit,
     onCargaExitosa: (Int) -> Unit = {},
     onMainDestinationSelected: (Int) -> Unit = {},
+    items: List<NavItem> = emptyList(),
     vm: CargaViewModel = viewModel()
 ) {
     val state by vm.uiState.collectAsState()
@@ -170,7 +173,11 @@ fun CargaDocumentoScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = { AppTopBar(title = if (state.isEditando) "Editar documento" else "Cargar documento") },
         bottomBar = {
-            MainBottomNavBar(activeIndex = 2, onItemSelected = onMainDestinationSelected)
+            MainBottomNavBar(
+                activeIndex = BottomNavItem.CARGA,
+                onItemSelected = onMainDestinationSelected,
+                items = items
+            )
         }
     ) { padding ->
         Column(
