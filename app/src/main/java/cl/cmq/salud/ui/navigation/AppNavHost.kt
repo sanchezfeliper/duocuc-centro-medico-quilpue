@@ -31,6 +31,9 @@ import androidx.navigation.compose.rememberNavController
 import cl.cmq.salud.di.AppContainer
 import cl.cmq.salud.domain.permissions.PermisosPorPerfil
 import cl.cmq.salud.domain.session.SesionActual
+import cl.cmq.salud.ui.components.BottomNavItem
+import cl.cmq.salud.ui.components.RutaPrincipal
+import cl.cmq.salud.ui.components.mainNavigationItemsPara
 import cl.cmq.salud.ui.screens.carga.CargaDocumentoScreen
 import cl.cmq.salud.ui.screens.carga.CargaViewModel
 import cl.cmq.salud.ui.screens.consulta.ConsultaExpedienteScreen
@@ -70,34 +73,31 @@ fun AppNavHost() {
         }
     }
 
+    // ¿El perfil con sesión puede revisar? Fuente única para la barra inferior
+    // y para validar el destino de Revisión (RF-15 / mínimo privilegio).
+    fun puedeRevisarActivo(): Boolean =
+        sesion?.perfil?.let { PermisosPorPerfil.veRevision(it) } == true
+
     fun navigateToMainDestination(index: Int) {
-        val perfilActivo = sesion?.perfil
-        val puedeRevisar = perfilActivo != null && PermisosPorPerfil.veRevision(perfilActivo)
-        // Índices de la barra inferior. El cuarto botón existe siempre, pero
-        // apunta a un destino distinto: Revisión para quien revisa (RF-15) y
-        // Perfil para el resto. Así ningún perfil ve un botón que no puede usar.
-        val route = when (index) {
-            0 -> AppDestinos.Home.route
-            1 -> AppDestinos.Expediente.route
-            2 -> AppDestinos.Carga.route
-            3 -> if (puedeRevisar) AppDestinos.Revision.route else AppDestinos.Perfil.route
-            else -> return
-        }
-        if (route == AppDestinos.Revision.route && !puedeRevisar) {
-            Toast.makeText(context, "Tu perfil no tiene acceso a la bandeja de revisión.", Toast.LENGTH_SHORT).show()
-            return
+        val puedeRevisar = puedeRevisarActivo()
+        // El mapeo índice -> destino vive en BottomNavItem.destinoDe: es la
+        // única tabla de la app, así ninguna pantalla puede desincronizarse de
+        // ella. Aquí solo se traduce el destino a su ruta y se valida el
+        // permiso (defensa en profundidad: ocultar el botón no basta).
+        val route = when (val destino = BottomNavItem.destinoDe(index, puedeRevisar)) {
+            RutaPrincipal.Inicio -> AppDestinos.Home.route
+            RutaPrincipal.Expediente -> AppDestinos.Expediente.route
+            RutaPrincipal.Carga -> AppDestinos.Carga.route
+            RutaPrincipal.Perfil -> AppDestinos.Perfil.route
+            RutaPrincipal.Revision -> AppDestinos.Revision.route
+            null -> {
+                // Sin destino solo queda el caso de Revisión pedida sin permiso
+                // (el botón existe para otros perfiles, no para este).
+                Toast.makeText(context, "Tu perfil no tiene acceso a la bandeja de revisión.", Toast.LENGTH_SHORT).show()
+                return
+            }
         }
         navController.navigate(route) {
-            popUpTo(AppDestinos.Home.route) { saveState = true }
-            launchSingleTop = true
-            restoreState = true
-        }
-    }
-
-    // El botón "Perfil" de la barra inferior vuelve a su pestaña en lugar de
-    // apilar una copia: la barra muestra Perfil como destino activo.
-    fun volverAPerfil(@Suppress("UNUSED_PARAMETER") index: Int) {
-        navController.navigate(AppDestinos.Perfil.route) {
             popUpTo(AppDestinos.Home.route) { saveState = true }
             launchSingleTop = true
             restoreState = true
@@ -148,30 +148,38 @@ fun AppNavHost() {
         }
 
         composable(AppDestinos.Perfil.route) {
-            SesionRequerida(sesion) {
+            SesionRequerida(sesion) { sesionActiva ->
+                // Perfil cierra la barra: su índice depende de si hay Revisión.
+                val itemsPerfil = mainNavigationItemsPara(PermisosPorPerfil.veRevision(sesionActiva.perfil))
                 PerfilScreen(
                     onVolver = { navController.popBackStack() },
                     // "Ver mis documentos" lleva al historial (Expediente).
-                    onVerMisDocumentos = { navigateToMainDestination(1) },
+                    onVerMisDocumentos = { navigateToMainDestination(BottomNavItem.EXPEDIENTE) },
                     onCerrarSesion = {
                         AppContainer.cerrarSesion()
                         navController.navigate(AppDestinos.Login.route) {
                             popUpTo(0) { inclusive = true }
                         }
                     },
-                    // Para los perfiles sin bandeja de revisión, Perfil es el
-                    // cuarto destino de la barra inferior y se pinta como tal.
-                    onMainDestinationSelected = ::volverAPerfil,
-                    activeIndex = if (PermisosPorPerfil.veRevision(it.perfil)) 3 else -1
+                    // Perfil es un destino de la barra inferior para todos los
+                    // perfiles, también para administración: la bandeja de
+                    // revisión no reemplaza el acceso a los propios datos.
+                    onMainDestinationSelected = ::navigateToMainDestination,
+                    items = itemsPerfil,
+                    activeIndex = BottomNavItem.indicePerfil(itemsPerfil) ?: 0
                 )
             }
         }
 
         composable(AppDestinos.Home.route) {
             HomeScreen(
-                onNavigateExpediente = { navigateToMainDestination(1) },
-                onNavigateCarga = { navigateToMainDestination(2) },
-                onNavigateRevision = { navigateToMainDestination(3) },
+                // La barra inferior reenvía el índice tocado a este mismo mapeo,
+                // igual que Expediente, Carga y Revisión: una sola tabla
+                // índice -> ruta en todo el grafo.
+                onMainDestinationSelected = ::navigateToMainDestination,
+                // Las tarjetas del contenido sí apuntan a un destino concreto.
+                onNavigateExpediente = { navigateToMainDestination(BottomNavItem.EXPEDIENTE) },
+                onNavigateRevision = { navigateToMainDestination(BottomNavItem.REVISION) },
                 onCerrarSesion = {
                     AppContainer.cerrarSesion()
                     navController.navigate(AppDestinos.Login.route) {
@@ -185,6 +193,9 @@ fun AppNavHost() {
             ConsultaExpedienteScreen(
                 onVolver = { navController.popBackStack() },
                 onMainDestinationSelected = ::navigateToMainDestination,
+                // La barra refleja el perfil activo: administración también ve
+                // su botón de Revisión desde aquí, no solo los cuatro comunes.
+                items = mainNavigationItemsPara(puedeRevisarActivo()),
                 // Meta 6: Listado -> Detalle pasando el ID por la ruta
                 onDocumentoClick = { idDocumento ->
                     navController.navigate(AppDestinos.Detalle.crearRuta(idDocumento))
@@ -220,6 +231,7 @@ fun AppNavHost() {
             CargaDocumentoScreen(
                 onVolver = { navController.popBackStack() },
                 onMainDestinationSelected = ::navigateToMainDestination,
+                items = mainNavigationItemsPara(puedeRevisarActivo()),
                 vm = viewModel(
                     key = "carga_editar_$idDocumento",
                     factory = CargaViewModel.factory(idDocumento)
@@ -242,7 +254,8 @@ fun AppNavHost() {
                 if (PermisosPorPerfil.veRevision(sesionActiva.perfil)) {
                     ValidacionScreen(
                         onVolver = { navController.popBackStack() },
-                        onMainDestinationSelected = ::navigateToMainDestination
+                        onMainDestinationSelected = ::navigateToMainDestination,
+                        puedeRevisar = true
                     )
                 } else {
                     AccesoDenegado(onVolver = { navController.popBackStack() })
@@ -254,6 +267,7 @@ fun AppNavHost() {
             CargaDocumentoScreen(
                 onVolver = { navController.popBackStack() },
                 onMainDestinationSelected = ::navigateToMainDestination,
+                items = mainNavigationItemsPara(puedeRevisarActivo()),
                 onCargaExitosa = { idDocumento ->
                     Toast.makeText(context, "Documento #$idDocumento registrado exitosamente", Toast.LENGTH_SHORT).show()
                     navController.navigate(AppDestinos.Home.route) {

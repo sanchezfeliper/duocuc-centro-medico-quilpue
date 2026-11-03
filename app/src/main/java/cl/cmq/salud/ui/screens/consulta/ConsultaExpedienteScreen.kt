@@ -40,9 +40,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.cmq.salud.ui.components.AppTopBar
+import cl.cmq.salud.ui.components.BottomNavItem
 import cl.cmq.salud.ui.components.DocumentoCard
 import cl.cmq.salud.ui.components.EmptyState
 import cl.cmq.salud.ui.components.MainBottomNavBar
+import cl.cmq.salud.ui.components.NavItem
 import cl.cmq.salud.ui.theme.Background
 import cl.cmq.salud.ui.theme.Blue
 import cl.cmq.salud.ui.theme.Grey
@@ -61,6 +63,7 @@ fun ConsultaExpedienteScreen(
     onVolver: () -> Unit,
     onDocumentoClick: (Int) -> Unit,
     onMainDestinationSelected: (Int) -> Unit = {},
+    items: List<NavItem> = emptyList(),
     vm: ConsultaViewModel = viewModel()
 ) {
     val state by vm.uiState.collectAsState()
@@ -69,7 +72,11 @@ fun ConsultaExpedienteScreen(
         containerColor = Background,
         topBar = { AppTopBar(title = "Expediente") },
         bottomBar = {
-            MainBottomNavBar(activeIndex = 1, onItemSelected = onMainDestinationSelected)
+            MainBottomNavBar(
+                activeIndex = BottomNavItem.EXPEDIENTE,
+                onItemSelected = onMainDestinationSelected,
+                items = items
+            )
         }
     ) { padding ->
         Column(

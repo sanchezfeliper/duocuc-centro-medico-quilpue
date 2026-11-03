@@ -37,7 +37,9 @@ import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material3.Icon
 import cl.cmq.salud.ui.components.AlertCard
 import cl.cmq.salud.ui.components.AppTopBar
+import cl.cmq.salud.ui.components.BottomNavItem
 import cl.cmq.salud.ui.components.MainBottomNavBar
+import cl.cmq.salud.ui.components.mainNavigationItemsPara
 import cl.cmq.salud.ui.theme.Accent
 import cl.cmq.salud.ui.theme.Background
 import cl.cmq.salud.ui.theme.Grey
@@ -51,8 +53,8 @@ import cl.cmq.salud.ui.theme.Teal
 fun HomeScreen(
     vm: HomeViewModel = viewModel(),
     onNavigateExpediente: () -> Unit,
-    onNavigateCarga: () -> Unit,
     onNavigateRevision: () -> Unit,
+    onMainDestinationSelected: (Int) -> Unit = {},
     onCerrarSesion: () -> Unit
 ) {
     val state by vm.uiState.collectAsState()
@@ -60,6 +62,12 @@ fun HomeScreen(
     LaunchedEffect(state.isSessionActive) {
         if (!state.isSessionActive) onCerrarSesion()
     }
+
+    // La barra depende del perfil: administración suma el quinto botón de
+    // revisión, el funcionario mantiene cuatro. El índice tocado se reenvía
+    // crudo al grafo, que es el único que conoce el mapeo índice -> ruta: así
+    // esta pantalla no mantiene una tabla paralela que pueda desincronizarse.
+    val itemsBarra = mainNavigationItemsPara(state.puedeRevisar)
 
     Scaffold(
         containerColor = Background,
@@ -91,14 +99,9 @@ fun HomeScreen(
         },
         bottomBar = {
             MainBottomNavBar(
-                activeIndex = 0,
-                onItemSelected = { index ->
-                    when (index) {
-                        1 -> onNavigateExpediente()
-                        2 -> onNavigateCarga()
-                        3 -> if (state.puedeRevisar) onNavigateRevision()
-                    }
-                }
+                activeIndex = BottomNavItem.INICIO,
+                items = itemsBarra,
+                onItemSelected = onMainDestinationSelected
             )
         }
     ) { padding ->
